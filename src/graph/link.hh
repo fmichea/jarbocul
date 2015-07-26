@@ -55,12 +55,11 @@ public:
     void do_link(Link* link);
     void do_unlink(Link* link);
 
-    bool accept_merges_bottom(Block* block);
-    bool accept_merges_top(Block* block);
+    bool accepts_merge_bottom(const Block* block);
+    bool accepts_merge_top(const Block* block);
 
-    std::set<Link*> get_all_links_to_block(Block* block) {
-        return this->_link_sources_idx[block->id()];
-    }
+    std::set<Link*> get_all_links_to_block(const Block* block);
+    std::set<Link*> get_all_links_from_block(const Block* block);
 
 private:
     typedef std::pair<BlockId, BlockId> BlocksToLinkMapKey;
@@ -72,6 +71,7 @@ private:
 private:
     void _add_link_to_idx(BlockToLinksIdx& idx, const Block* block, Link* link);
     void _del_link_from_idx(BlockToLinksIdx& idx, const Block* block, Link* link);
+    bool _idx_contains_one_link_for_block(BlockToLinksIdx& idx, const Block* block);
 
 private:
     BlocksToLinkMap _links;

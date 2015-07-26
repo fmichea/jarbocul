@@ -26,10 +26,10 @@ public:
     Block(Instruction* inst);
     virtual ~Block();
 
-    virtual std::string name();
+    virtual std::string name() const;
     virtual BlockId id() const;
 
-    void merge(Block* other);
+    void merge(const Block* other);
 
 #if 0
     void set_uniq(bool uniq);
@@ -39,6 +39,8 @@ public:
     Instruction* op();
 
 public:
+    uint16_t& pc;
+
     blocktype block_type;
 
     bool uniq;
@@ -57,7 +59,7 @@ public:
         instr->pc = 0;
     }
 
-    std::string name();
+    std::string name() const;
 
 public:
     bool mergeable;

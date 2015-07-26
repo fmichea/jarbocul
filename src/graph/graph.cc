@@ -21,18 +21,16 @@ Instruction* parse_line(std::string line) {
 
     Instruction* inst = new Instruction();
 
-    std::string pc = line.substr(11, 4);
+    std::string pc = line.substr(12, 4);
     inst->pc = std::stoi(pc, 0, 16);
-    //std::cout << pc; // << this->entry_.pc;
 
-    std::string opcode = line.substr(26, 2);
+    std::string opcode = line.substr(27, 2);
     inst->opcode = std::stoi(opcode, 0, 16);
-    //std::cout << opcode; // << this->entry_.opcode;
 
-    std::string data = line.substr(36, 2);
-    inst->data[0] = std::stoi(opcode, 0, 16);
-    data = line.substr(38, 2);
-    inst->data[1] = std::stoi(opcode, 0, 16);
+    std::string data = line.substr(37, 2);
+    inst->data[0] = std::stoi(data, 0, 16);
+    data = line.substr(39, 2);
+    inst->data[1] = std::stoi(data, 0, 16);
 
     return inst;
 }
@@ -40,7 +38,7 @@ Instruction* parse_line(std::string line) {
 FT flowtype(Block* block, Block* last_block, uint16_t offset) {
     FT ret = FLOWTYPE_INIT;
 
-    switch (block->insts.front()->opcode) {
+    switch (last_block->insts.front()->opcode) {
     case 0xC0: case 0xC8: case 0xC9:
     case 0xD0: case 0xD8: case 0xD9:
         ret |= FLOWTYPE_OPCODE_RET;
@@ -48,7 +46,7 @@ FT flowtype(Block* block, Block* last_block, uint16_t offset) {
         return ret;
     };
 
-    switch (last_block->insts.front()->opcode) {
+    switch (block->insts.front()->opcode) {
     case 0xC4: case 0xCC: case 0xCD:
     case 0xD4: case 0xDC:
         ret |= FLOWTYPE_OPCODE_CALL;
@@ -153,7 +151,7 @@ void Graph::generate_graph() {
         link = this->_link_mgr.find_link(last_block, current_block);
 
         // Now we need to treat special cases.
-        uint16_t offset = current_block->op()->pc - last_block->op()->pc;
+        uint16_t offset = current_block->pc - last_block->pc;
 
         FT ft = flowtype(last_block, current_block, offset);
 
@@ -164,14 +162,15 @@ void Graph::generate_graph() {
         case FLOWTYPE_OPCODE_RET:
             if ((ft & FLOWTYPE_ACTION_MASK) == FLOWTYPE_ACTION_NOTTAKEN)
                 break;
+
             /* We have a ret, and it triggered. In that case, we will try to
             ** use our backtrace to go where we were called. */
             if (!backtrace.empty()) {
                 Block* back = backtrace.top().first;
                 uint16_t size = backtrace.top().second;
-                if (!size || op->pc == back->op()->pc + size || is_interrupt(op)) {
+                if (size == 0 || op->pc == back->op()->pc + size || is_interrupt(op)) {
                     last_block = back;
-                    delete link;
+                    //delete link;
                     link = this->_link_mgr.find_link(last_block, current_block);
                     backtrace.pop();
                     break;
@@ -277,6 +276,52 @@ void Graph::generate_graph() {
      ***** STEP 3: Now we will merge all the blocks that can be merged to *****
      *****         remove useless links and make it ready.                *****
      **************************************************************************/
+    std::list<uint16_t> keys;
+    for (std::pair<uint16_t, std::list<Block*> > _ : blocks) {
+        keys.push_back(_.first);
+    }
+    keys.sort();
+
+    for (uint16_t addr : keys) {
+        for (Block* block : blocks[addr]) {
+            while (true) {
+                // If this block cannot be merged on its bottom, we ignore it.
+                if (!this->_link_mgr.accepts_merge_bottom(block)) {
+                    break;
+                }
+
+                // We now know that we have only one link, we fetch the block
+                // it goes to and check whether it accepts top merges too.
+                std::set<Link*> dests = this->_link_mgr.get_all_links_from_block(block);
+                assert(dests.size() == 1);
+                Link* link_to = *dests.begin();
+                const Block* to = link_to->to;
+
+                if (!this->_link_mgr.accepts_merge_top(to)) {
+                    break;
+                }
+
+                std::list<Block*>& lst = blocks[to->insts.front()->pc];
+                std::list<Block*>::iterator er_it = lst.begin();
+                while (er_it != lst.end()) {
+                    if (*er_it == to)
+                        break;
+                    er_it++;
+                }
+                if (er_it != lst.end())
+                    lst.erase(er_it);
+
+                block->merge(to);
+
+                for (Link* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
+                    this->_link_mgr.find_link(block, link_to_merge->to, true);
+                    this->_link_mgr.do_unlink(link_to_merge);
+                }
+                this->_link_mgr.do_unlink(link_to);
+                delete to;
+            }
+        }
+    }
 
 
     /**************************************************************************
@@ -284,23 +329,3 @@ void Graph::generate_graph() {
      *****         generate.                                              *****
      **************************************************************************/
 }
-
-# if 0
-template <typename CPU>
-Link<CPU>* Graph::_find_link(Block<CPU>* from, Block<CPU>* to, bool& new_link) {
-    Link<CPU> tmp(from, to);
-
-    new_link = false;
-    for (Link<CPU>* link : from.tos()) {
-        if (link == tmp)
-            return link;
-    }
-    new_link = true;
-    return new Link<CPU>(from, to);
-}
-
-template <typename CPU>
-void Graph::_ret_miss(Link<CPU>* link) {
-    link->link_type = LINKTYPE_RET_MISS;
-}
-#endif

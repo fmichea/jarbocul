@@ -11,7 +11,8 @@ std::string blocktype2str(blocktype t) {
 }
 
 Block::Block(Instruction* inst)
-    : block_type (BLOCKTYPE_LOC)
+    : pc (inst->pc)
+    , block_type (BLOCKTYPE_LOC)
     , uniq (true)
     , uniq_id (0)
     , tlf (false)
@@ -23,7 +24,7 @@ Block::Block(Instruction* inst)
 Block::~Block()
 {}
 
-std::string Block::name() {
+std::string Block::name() const {
     std::ostringstream result;
     std::ostringstream addr;
 
@@ -40,16 +41,23 @@ BlockId Block::id() const {
     Instruction* inst = this->insts.front();
     BlockId res = 0;
 
-    res |= ((BlockId) inst->pc << 48);
-    res |= ((BlockId) inst->opcode << 40);
-    res |= ((BlockId) inst->data[0] << 32);
-    res |= ((BlockId) inst->data[1] << 24);
+    res |= ((BlockId) inst->pc) << 48;
+    res |= ((BlockId) inst->opcode) << 40;
+    res |= ((BlockId) inst->data[0]) << 32;
+    res |= ((BlockId) inst->data[1]) << 24;
     return res;
 }
 
 Instruction* Block::op() {
     assert(this->insts.size() == 1);
     return this->insts.front();
+}
+
+void Block::merge(const Block* other) {
+    assert(this != other);
+    for (Instruction* inst : other->insts) {
+        this->insts.push_back(inst);
+    }
 }
 
 #if 0
@@ -60,6 +68,6 @@ void Block::merge(Block* other) {
 
 
 
-std::string SpecialBlock::name() {
+std::string SpecialBlock::name() const {
     return Block::name() + "S";
 }
