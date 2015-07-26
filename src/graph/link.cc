@@ -12,7 +12,7 @@ std::string linktype2str(linktype t) {
 }
 
 
-Link::Link(Block* from, Block* to)
+Link::Link(const Block* from, const Block* to)
     : from (from)
     , to (to)
     , link_type (LINKTYPE_NORMAL)
@@ -42,7 +42,7 @@ LinkMgr::~LinkMgr() {
 #endif
 }
 
-Link* LinkMgr::find_link(Block* from, Block* to, bool do_link) {
+Link* LinkMgr::find_link(const Block* from, const Block* to, bool do_link) {
     Link* res = nullptr;
 
     LinkMgr::BlocksToLinkMapKey key(from->id(), to->id());
@@ -71,6 +71,19 @@ void LinkMgr::do_link(Link* link) {
     this->_add_link_to_idx(this->_link_destinations_idx, link->to, link);
 }
 
+void LinkMgr::do_unlink(Link* link) {
+    if (link == nullptr)
+        return;
+
+    LinkMgr::BlocksToLinkMapKey key(link->from->id(), link->to->id());
+
+    this->_links.erase(key);
+    this->_del_link_from_idx(this->_link_sources_idx, link->from, link);
+    this->_del_link_from_idx(this->_link_destinations_idx, link->to, link);
+
+    delete link;
+}
+
 void LinkMgr::_add_link_to_idx(LinkMgr::BlockToLinksIdx& idx,
                                const Block* block,
                                Link* link)
@@ -81,4 +94,15 @@ void LinkMgr::_add_link_to_idx(LinkMgr::BlockToLinksIdx& idx,
         idx[block->id()] = LinkMgr::BlockToLinksIdxValue();
     }
     idx[block->id()].insert(link);
+}
+
+void LinkMgr::_del_link_from_idx(BlockToLinksIdx& idx,
+                                 const Block* block,
+                                 Link* link)
+{
+    LinkMgr::BlockToLinksIdx::iterator it = idx.find(block->id());
+
+    if (it != idx.end()) {
+        it->second.erase(link);
+    }
 }

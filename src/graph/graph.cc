@@ -241,6 +241,36 @@ void Graph::generate_graph() {
      *****         unmergeable, that will only contain the name of the     *****
      *****         functions.                                              *****
      **************************************************************************/
+    std::list<Block*> functions;
+
+    for (std::pair<uint16_t, std::list<Block*> > _ : blocks) {
+        for (Block* block : _.second) {
+            // If we did interrupts correctly, we don't have any link that come
+            // to it, we just need to put it in the function list.
+            if (block->block_type == BLOCKTYPE_INT)
+                functions.push_back(block);
+
+            // We only care about subs from here.
+            if (block->block_type != BLOCKTYPE_SUB)
+                continue;
+
+            // For each link, if it's a call link (it is marked as "taken"),
+            // then we remove this link and place a little box instead, to be
+            // able to split the functions' graphs in multiple files.
+            for (Link* link : this->_link_mgr.get_all_links_to_block(block)) {
+                if (link->link_type != LINKTYPE_CALL_TAKEN)
+                    continue;
+                Block* call_block = new SpecialBlock();
+                call_block->op()->pc = block->op()->pc;
+                // FIXME: call_block->set_mergeable(false);
+                Link* call_link = this->_link_mgr.find_link(link->from, call_block, true);
+                call_link->link_type = LINKTYPE_CALL_TAKEN;
+                this->_link_mgr.do_unlink(link);
+            }
+
+            functions.push_back(block);
+         }
+     }
 
 
     /**************************************************************************

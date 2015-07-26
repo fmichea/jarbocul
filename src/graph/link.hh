@@ -21,7 +21,7 @@ std::string linktype2str(linktype t);
 
 class Link {
 public:
-    Link(Block* from, Block* to);
+    Link(const Block* from, const Block* to);
     virtual ~Link() {}
 
 #if 0
@@ -50,12 +50,17 @@ public:
     LinkMgr();
     virtual ~LinkMgr();
 
-    Link* find_link(Block* from, Block* to, bool do_link=false);
+    Link* find_link(const Block* from, const Block* to, bool do_link=false);
 
     void do_link(Link* link);
+    void do_unlink(Link* link);
 
     bool accept_merges_bottom(Block* block);
     bool accept_merges_top(Block* block);
+
+    std::set<Link*> get_all_links_to_block(Block* block) {
+        return this->_link_sources_idx[block->id()];
+    }
 
 private:
     typedef std::pair<BlockId, BlockId> BlocksToLinkMapKey;
@@ -66,6 +71,7 @@ private:
 
 private:
     void _add_link_to_idx(BlockToLinksIdx& idx, const Block* block, Link* link);
+    void _del_link_from_idx(BlockToLinksIdx& idx, const Block* block, Link* link);
 
 private:
     BlocksToLinkMap _links;
