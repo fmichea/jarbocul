@@ -26,10 +26,10 @@ public:
     Block(Instruction* inst);
     virtual ~Block();
 
-    virtual std::string name() const;
-    virtual BlockId id() const;
+    virtual std::string name() ;
+    virtual BlockId id() ;
 
-    void merge(const Block* other);
+    void merge(Block* other);
 
 #if 0
     void set_uniq(bool uniq);
@@ -49,6 +49,10 @@ public:
     bool tlf;
 
     std::list<Instruction*> insts;
+
+    std::list<std::string> within;
+
+    bool mergeable;
 };
 
 class SpecialBlock : public Block {
@@ -59,10 +63,7 @@ public:
         instr->pc = 0;
     }
 
-    std::string name() const;
-
-public:
-    bool mergeable;
+    std::string name() ;
 };
 
 #endif /* !BLOCK_HH_ */

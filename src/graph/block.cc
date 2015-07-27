@@ -17,6 +17,8 @@ Block::Block(Instruction* inst)
     , uniq_id (0)
     , tlf (false)
     , insts ()
+    , within ()
+    , mergeable (true)
 {
     this->insts.push_back(inst);
 }
@@ -24,11 +26,11 @@ Block::Block(Instruction* inst)
 Block::~Block()
 {}
 
-std::string Block::name() const {
+std::string Block::name() {
     std::ostringstream result;
     std::ostringstream addr;
 
-    addr << std::setfill('0') << std::setw(4) << this->insts.front()->pc;
+    addr << std::setfill('0') << std::setw(4) << std::hex << this->pc;
 
     result << blocktype2str(this->block_type) << "_" << addr.str();
     if (!this->uniq) {
@@ -37,7 +39,7 @@ std::string Block::name() const {
     return result.str();
 }
 
-BlockId Block::id() const {
+BlockId Block::id() {
     Instruction* inst = this->insts.front();
     BlockId res = 0;
 
@@ -53,7 +55,7 @@ Instruction* Block::op() {
     return this->insts.front();
 }
 
-void Block::merge(const Block* other) {
+void Block::merge(Block* other) {
     assert(this != other);
     for (Instruction* inst : other->insts) {
         this->insts.push_back(inst);
@@ -68,6 +70,6 @@ void Block::merge(Block* other) {
 
 
 
-std::string SpecialBlock::name() const {
+std::string SpecialBlock::name() {
     return Block::name() + "S";
 }

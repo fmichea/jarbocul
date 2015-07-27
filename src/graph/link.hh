@@ -21,7 +21,7 @@ std::string linktype2str(linktype t);
 
 class Link {
 public:
-    Link(const Block* from, const Block* to);
+    Link(Block* from, Block* to);
     virtual ~Link() {}
 
 #if 0
@@ -34,8 +34,8 @@ public:
 #endif
 
 public:
-    const Block* from;
-    const Block* to;
+    Block* from;
+    Block* to;
 
     linktype link_type;
 
@@ -50,16 +50,16 @@ public:
     LinkMgr();
     virtual ~LinkMgr();
 
-    Link* find_link(const Block* from, const Block* to, bool do_link=false);
+    Link* find_link(Block* from, Block* to, bool do_link=false);
 
     void do_link(Link* link);
     void do_unlink(Link* link);
 
-    bool accepts_merge_bottom(const Block* block);
-    bool accepts_merge_top(const Block* block);
+    bool accepts_merge_bottom(Block* block);
+    bool accepts_merge_top(Block* block);
 
-    std::set<Link*> get_all_links_to_block(const Block* block);
-    std::set<Link*> get_all_links_from_block(const Block* block);
+    std::set<Link*> get_all_links_to_block(Block* block);
+    std::set<Link*> get_all_links_from_block(Block* block);
 
 private:
     typedef std::pair<BlockId, BlockId> BlocksToLinkMapKey;
@@ -69,9 +69,9 @@ private:
     typedef std::map<BlockId, BlockToLinksIdxValue> BlockToLinksIdx;
 
 private:
-    void _add_link_to_idx(BlockToLinksIdx& idx, const Block* block, Link* link);
-    void _del_link_from_idx(BlockToLinksIdx& idx, const Block* block, Link* link);
-    bool _idx_contains_one_link_for_block(BlockToLinksIdx& idx, const Block* block);
+    void _add_link_to_idx(BlockToLinksIdx& idx, Block* block, Link* link);
+    void _del_link_from_idx(BlockToLinksIdx& idx, Block* block, Link* link);
+    bool _idx_contains_one_link_for_block(BlockToLinksIdx& idx, Block* block);
 
 private:
     BlocksToLinkMap _links;

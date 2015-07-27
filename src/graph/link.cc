@@ -12,7 +12,7 @@ std::string linktype2str(linktype t) {
 }
 
 
-Link::Link(const Block* from, const Block* to)
+Link::Link(Block* from, Block* to)
     : from (from)
     , to (to)
     , link_type (LINKTYPE_NORMAL)
@@ -44,7 +44,7 @@ LinkMgr::~LinkMgr() {
 
 #include <iostream>
 
-Link* LinkMgr::find_link(const Block* from, const Block* to, bool do_link) {
+Link* LinkMgr::find_link(Block* from, Block* to, bool do_link) {
     Link* res = nullptr;
 
     LinkMgr::BlocksToLinkMapKey key(from->id(), to->id());
@@ -90,7 +90,7 @@ void LinkMgr::do_unlink(Link* link) {
 }
 
 void LinkMgr::_add_link_to_idx(LinkMgr::BlockToLinksIdx& idx,
-                               const Block* block,
+                               Block* block,
                                Link* link)
 {
     LinkMgr::BlockToLinksIdx::iterator it = idx.find(block->id());
@@ -102,7 +102,7 @@ void LinkMgr::_add_link_to_idx(LinkMgr::BlockToLinksIdx& idx,
 }
 
 void LinkMgr::_del_link_from_idx(BlockToLinksIdx& idx,
-                                 const Block* block,
+                                 Block* block,
                                  Link* link)
 {
     LinkMgr::BlockToLinksIdx::iterator it = idx.find(block->id());
@@ -112,14 +112,14 @@ void LinkMgr::_del_link_from_idx(BlockToLinksIdx& idx,
     }
 }
 
-bool LinkMgr::accepts_merge_bottom(const Block* block) {
+bool LinkMgr::accepts_merge_bottom(Block* block) {
     return this->_idx_contains_one_link_for_block(
         this->_link_destinations_idx,
         block
     );
 }
 
-bool LinkMgr::accepts_merge_top(const Block* block) {
+bool LinkMgr::accepts_merge_top(Block* block) {
     return this->_idx_contains_one_link_for_block(
         this->_link_sources_idx,
         block
@@ -127,7 +127,7 @@ bool LinkMgr::accepts_merge_top(const Block* block) {
 }
 
 bool LinkMgr::_idx_contains_one_link_for_block(BlockToLinksIdx& idx,
-                                               const Block* block)
+                                               Block* block)
 {
     LinkMgr::BlockToLinksIdx::iterator it = idx.find(block->id());
 
@@ -140,10 +140,10 @@ bool LinkMgr::_idx_contains_one_link_for_block(BlockToLinksIdx& idx,
     return it->second.size() == 1;
 }
 
-std::set<Link*> LinkMgr::get_all_links_to_block(const Block* block) {
+std::set<Link*> LinkMgr::get_all_links_to_block(Block* block) {
     return this->_link_sources_idx[block->id()];
 }
 
-std::set<Link*> LinkMgr::get_all_links_from_block(const Block* block) {
+std::set<Link*> LinkMgr::get_all_links_from_block(Block* block) {
     return this->_link_destinations_idx[block->id()];
 }

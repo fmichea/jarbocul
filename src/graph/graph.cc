@@ -15,6 +15,33 @@ typedef uint32_t FT;
 #define FLOWTYPE_ACTION_NOTTAKEN    0x0100
 #define FLOWTYPE_ACTION_TAKEN       0x0200
 
+#include <queue>
+#include <set>
+
+void cutfunction(LinkMgr& link_mgr, std::map<uint16_t, std::list<Block*>>& blocks, Block* func) {
+    std::queue<Block*> todos;
+    std::set<BlockId> done;
+
+    todos.push(func);
+    while (!todos.empty()) {
+        Block* todo = todos.front();
+        todos.pop();
+
+        if (done.count(todo->id()) != 0) {
+            continue;
+        }
+        done.insert(todo->id());
+
+        blocks[todo->pc].remove(todo);
+
+        todo->within.push_back(func->name());
+
+        for (Link* link : link_mgr.get_all_links_from_block(todo)) {
+            todos.push(link->to);
+        }
+    }
+}
+
 Instruction* parse_line(std::string line) {
     if (line.size() != 41)
         return nullptr;
@@ -260,6 +287,7 @@ void Graph::generate_graph() {
                 if (link->link_type != LINKTYPE_CALL_TAKEN)
                     continue;
                 Block* call_block = new SpecialBlock();
+                call_block->mergeable = false;
                 call_block->op()->pc = block->op()->pc;
                 // FIXME: call_block->set_mergeable(false);
                 Link* call_link = this->_link_mgr.find_link(link->from, call_block, true);
@@ -270,7 +298,6 @@ void Graph::generate_graph() {
             functions.push_back(block);
          }
      }
-
 
     /**************************************************************************
      ***** STEP 3: Now we will merge all the blocks that can be merged to *****
@@ -285,6 +312,36 @@ void Graph::generate_graph() {
     for (uint16_t addr : keys) {
         for (Block* block : blocks[addr]) {
             while (true) {
+                if (!block->mergeable) {
+                    break;
+                }
+
+                bool is_flow_opcode = false;
+                switch (block->insts.back()->opcode) {
+                // ret
+                case 0xC0: case 0xC8: case 0xC9:
+                case 0xD0: case 0xD8: case 0xD9:
+                // call
+                case 0xC4: case 0xCC: case 0xCD:
+                case 0xD4: case 0xDC:
+                // jump
+                case 0xC2: case 0xC3: case 0xCA:
+                case 0xD2: case 0xDA:
+                case 0xE9:
+                // jr
+                case 0x18:
+                case 0x20: case 0x28:
+                case 0x30: case 0x38:
+                    is_flow_opcode = true;
+                    break;
+
+                default:
+                    break;
+                };
+                if (is_flow_opcode) {
+                    break;
+                }
+
                 // If this block cannot be merged on its bottom, we ignore it.
                 if (!this->_link_mgr.accepts_merge_bottom(block)) {
                     break;
@@ -295,12 +352,17 @@ void Graph::generate_graph() {
                 std::set<Link*> dests = this->_link_mgr.get_all_links_from_block(block);
                 assert(dests.size() == 1);
                 Link* link_to = *dests.begin();
-                const Block* to = link_to->to;
+                Block* to = link_to->to;
+
+                if (!to->mergeable) {
+                    break;
+                }
 
                 if (!this->_link_mgr.accepts_merge_top(to)) {
                     break;
                 }
 
+#if 0
                 std::list<Block*>& lst = blocks[to->insts.front()->pc];
                 std::list<Block*>::iterator er_it = lst.begin();
                 while (er_it != lst.end()) {
@@ -310,6 +372,8 @@ void Graph::generate_graph() {
                 }
                 if (er_it != lst.end())
                     lst.erase(er_it);
+#endif
+                blocks[to->pc].remove(to);
 
                 block->merge(to);
 
@@ -318,14 +382,59 @@ void Graph::generate_graph() {
                     this->_link_mgr.do_unlink(link_to_merge);
                 }
                 this->_link_mgr.do_unlink(link_to);
-                delete to;
+                //delete to;
             }
         }
     }
-
 
     /**************************************************************************
      ***** STEP 4: Now we decide  which functions we will need to         *****
      *****         generate.                                              *****
      **************************************************************************/
+    std::list<Block*> res_functions;
+
+    std::list<Block*> tmp_inner_functions;
+    std::list<Block*> res_inner_functions;
+
+    for (Block* func : functions) {
+        // We have two possibilities: the beginning of the sub is not only
+        // called, so we keep it for later concidering it to be within another
+        // function. Else, we just cut out the current sub function from the
+        // blocks.
+        std::set<Link*> links = this->_link_mgr.get_all_links_to_block(func);
+        if (links.size() != 0) {
+            tmp_inner_functions.push_back(func);
+        } else {
+            res_functions.push_back(func);
+            cutfunction(this->_link_mgr, blocks, func);
+        }
+    }
+
+    // Finally, for each "inner function" that were not reached from any
+    // standard function, we cut it out and generate it anyway, it must mean it
+    // is "within itself", example:
+    //
+    // sub_0216:
+    //    0216 - ldh %a, ($0xFF44)
+    //    0218 - cp %a, $0x145
+    //    021A - jr cy, $0xFA ; ($-6)
+    //    021C - ret
+    for (Block* inner : tmp_inner_functions) {
+        if (inner->within.size() == 0) {
+            res_functions.push_back(inner);
+            cutfunction(this->_link_mgr, blocks, inner);
+        } else {
+            res_inner_functions.push_back(inner);
+        }
+    }
+
+    std::cout << "Found " << res_functions.size() << " functions." << std::endl;
+    std::cout << "Found " << res_inner_functions.size() << " inner functions." << std::endl;
+
+    for (Block* func : res_functions) {
+        std::cout << func->name() << std::endl;
+    }
+    for (Block* func : res_inner_functions) {
+        std::cout << func->name() << " in " << func->within.front() << std::endl;
+    }
 }
