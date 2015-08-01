@@ -10,8 +10,31 @@
 # include <stack>
 # include <string>
 
+# include <fcntl.h>
+# include <unistd.h>
+# include <string.h>
+# include <sys/mman.h>
+# include <sys/stat.h>
+
 # include "block.hh"
 # include "link.hh"
+
+class FileReader {
+public:
+    FileReader(std::string filename);
+    virtual ~FileReader();
+
+    bool eof();
+
+    const char* readline();
+
+private:
+    int _fd;
+    char* _data;
+
+    size_t _size;
+    size_t _offset;
+};
 
 class Graph {
 public:
@@ -21,7 +44,7 @@ public:
     void generate_graph();
 
 private:
-    std::ifstream _file;
+    FileReader _file;
 
     LinkMgr _link_mgr;
 

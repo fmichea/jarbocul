@@ -18,7 +18,10 @@ typedef uint32_t FT;
 #include <queue>
 #include <set>
 
-void cutfunction(LinkMgr& link_mgr, std::map<uint16_t, std::list<Block*>>& blocks, Block* func) {
+void cutfunction(LinkMgr& link_mgr,
+                 std::map<uint16_t, std::list<Block*>>& blocks,
+                 Block* func)
+{
     std::queue<Block*> todos;
     std::set<BlockId> done;
 
@@ -42,22 +45,28 @@ void cutfunction(LinkMgr& link_mgr, std::map<uint16_t, std::list<Block*>>& block
     }
 }
 
-Instruction* parse_line(std::string line) {
-    if (line.size() != 41)
+Instruction* parse_line(const char* line) {
+    if (strlen(line) != 41)
         return nullptr;
 
     Instruction* inst = new Instruction();
 
-    std::string pc = line.substr(12, 4);
-    inst->pc = std::stoi(pc, 0, 16);
+    char pc[5];
+    memcpy(pc, line + 12, 4);
+    pc[4] = 0;
+    inst->pc = strtol(pc, NULL, 16);
 
-    std::string opcode = line.substr(27, 2);
-    inst->opcode = std::stoi(opcode, 0, 16);
+    char opcode[3];
+    memcpy(opcode, line + 27, 2);
+    opcode[2] = 0;
+    inst->opcode = strtol(opcode, NULL, 16);
 
-    std::string data = line.substr(37, 2);
-    inst->data[0] = std::stoi(data, 0, 16);
-    data = line.substr(39, 2);
-    inst->data[1] = std::stoi(data, 0, 16);
+    char data[3];
+    memcpy(data, line + 37, 2);
+    data[2] = 0;
+    inst->data[0] = strtol(data, NULL, 16);
+    memcpy(data, line + 39, 2);
+    inst->data[1] = strtol(data, NULL, 16);
 
     return inst;
 }
@@ -105,16 +114,58 @@ bool is_interrupt(Instruction* op) {
     return false;
 }
 
-Graph::Graph(std::string filename) {
-    this->_file.open(filename, std::ios::in);
+FileReader::FileReader(std::string filename)
+    : _offset (0)
+{
+    struct stat st;
+
+    this->_fd = open(filename.c_str(), O_RDWR);
+
+    fstat(this->_fd, &st);
+    this->_size = st.st_size;
+
+    void* data = mmap(NULL, this->_size, PROT_READ | PROT_WRITE, MAP_SHARED, this->_fd, 0);
+    this->_data = static_cast<char*>(data);
 }
 
-Graph::~Graph() {
-    this->_file.close();
+FileReader::~FileReader() {
+    munmap(this->_data, this->_size);
+    close(this->_fd);
 }
+
+bool FileReader::eof() {
+    return this->_offset == this->_size;
+}
+
+const char* FileReader::readline() {
+    std::string result;
+
+    if (this->_offset != 0) {
+        this->_data[this->_offset] = '\n';
+        this->_offset += 1;
+    }
+
+    const char* start = this->_data + this->_offset;
+    size_t len = this->_size - this->_offset;
+
+    char* end = static_cast<char*>(memchr(start, '\n', len));
+    if (end != nullptr) {
+        len = static_cast<size_t>(end - start);
+        *end = 0;
+    }
+
+    this->_offset += len;
+    return start;
+}
+
+Graph::Graph(std::string filename)
+    : _file (filename)
+{}
+
+Graph::~Graph() {}
 
 void Graph::generate_graph() {
-    std::string line;
+    const char* line;
 
     std::map<uint16_t, std::list<Block*>> blocks;
     std::stack<std::pair<Block*, uint16_t>> backtrace;
@@ -138,7 +189,7 @@ void Graph::generate_graph() {
     last_block = this->_begin;
 
     while (!this->_file.eof()) {
-        std::getline(this->_file, line);
+        line = this->_file.readline();
 
         op = parse_line(line);
 
