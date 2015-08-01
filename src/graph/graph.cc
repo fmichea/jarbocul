@@ -320,6 +320,7 @@ void Graph::generate_graph() {
      **************************************************************************/
     std::list<Block*> functions;
 
+    functions.push_back(this->_begin);
     for (std::pair<uint16_t, std::list<Block*> > _ : blocks) {
         for (Block* block : _.second) {
             // If we did interrupts correctly, we don't have any link that come
@@ -483,9 +484,19 @@ void Graph::generate_graph() {
     std::cout << "Found " << res_inner_functions.size() << " inner functions." << std::endl;
 
     for (Block* func : res_functions) {
-        std::cout << func->name() << std::endl;
+        std::cout << " - " << func->name() << std::endl;
     }
     for (Block* func : res_inner_functions) {
-        std::cout << func->name() << " in " << func->within.front() << std::endl;
+        bool first = true;
+
+        std::cout  << " - " << func->name() << " within the functions ";
+        for (std::string block_within : func->within) {
+            if (!first) {
+                std::cout << ", ";
+            }
+            std::cout << block_within;
+            first = false;
+        }
+        std::cout << std::endl;
     }
 }

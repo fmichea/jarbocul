@@ -53,6 +53,8 @@ public:
     std::list<std::string> within;
 
     bool mergeable;
+
+    virtual const char* _sep()  { return "_"; };
 };
 
 class SpecialBlock : public Block {
@@ -64,6 +66,9 @@ public:
     }
 
     std::string name() ;
+
+private:
+    const char* _sep()  { return "_1"; };
 };
 
 #endif /* !BLOCK_HH_ */

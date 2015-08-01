@@ -30,9 +30,10 @@ std::string Block::name() {
     std::ostringstream result;
     std::ostringstream addr;
 
-    addr << std::setfill('0') << std::setw(4) << std::hex << this->pc;
+    addr << std::setfill('0') << std::setw(4) << std::hex << std::uppercase
+         << this->pc;
 
-    result << blocktype2str(this->block_type) << "_" << addr.str();
+    result << blocktype2str(this->block_type) << this->_sep() << addr.str();
     if (!this->uniq) {
         result << "-" << this->uniq_id;
     }
