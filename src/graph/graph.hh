@@ -18,6 +18,7 @@
 
 # include "block.hh"
 # include "link.hh"
+# include "../processors/gb_z80/disassembler.hh"
 
 class FileReader {
 public:

@@ -499,4 +499,53 @@ void Graph::generate_graph() {
         }
         std::cout << std::endl;
     }
+
+    /**************************************************************************
+     ***** STEP 5: SANITY CHECK: if there are still blocks in the main    *****
+     *****         map, we probably failed something.                     *****
+     **************************************************************************/
+    // TODO
+
+    for (Block* func : res_functions) {
+        char filename[256];
+        char tmp[256];
+        snprintf(filename, 256, "result/%s.dot", func->name().c_str());
+
+        std::ofstream out(filename);
+        out << "digraph " << func->name() << " {" << std::endl;
+        out << "\tsplines = true;" << std::endl;
+        out << "\tnode [ shape = box, fontname = \"Monospace\" ];" << std::endl << std::endl;
+
+        std::queue<Block*> blocks_to_output;
+        std::set<BlockId> done;
+
+        blocks_to_output.push(func);
+        while (!blocks_to_output.empty()) {
+            Block* func_block = blocks_to_output.front();
+            blocks_to_output.pop();
+
+            if (done.count(func_block->id()) != 0) {
+                continue;
+            }
+            done.insert(func_block->id());
+
+            out << "\t" << func_block->name() << " [ label = \"";
+            out << func_block->name() << ":\\l";
+            for (Instruction* inst : func_block->insts) {
+                snprintf(tmp, 256, "     %04X: %02X - %s\\l", inst->pc, inst->opcode, disassemble(inst));
+                out << tmp;
+            }
+            out << "\" ];" << std::endl;
+
+            for (Link* link : this->_link_mgr.get_all_links_from_block(func_block)) {
+                out << "\t" << link->from->name() << " -> " << link->to->name()
+                    << " [ tailport = s, headport = n ];" << std::endl;
+                blocks_to_output.push(link->to);
+            }
+            out << std::endl;
+        }
+
+        out << "}" << std::endl;
+        out.close();
+    }
 }
