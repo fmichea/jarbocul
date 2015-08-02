@@ -205,14 +205,6 @@ void Graph::generate_graph() {
         if (op == nullptr)
             continue;
 
-        /* Create the list of blocks for the current PC in the blocks map if it
-        ** does not exist yet. */
-#if 0
-        if (blocks.count(op->pc) == 0) {
-            blocks[op->pc] = std::list<Block*>();
-        }
-#endif
-
         /* Check if we already know the current instruction for the current
         ** program counter. If we do, we keep the current block and add a
         ** link. */
@@ -434,17 +426,6 @@ void Graph::generate_graph() {
                     break;
                 }
 
-#if 0
-                std::list<Block*>& lst = blocks[to->insts.front()->pc];
-                std::list<Block*>::iterator er_it = lst.begin();
-                while (er_it != lst.end()) {
-                    if (*er_it == to)
-                        break;
-                    er_it++;
-                }
-                if (er_it != lst.end())
-                    lst.erase(er_it);
-#endif
                 blocks[to->pc].remove(to);
 
                 block->merge(to);
@@ -454,7 +435,6 @@ void Graph::generate_graph() {
                     this->_link_mgr.do_unlink(link_to_merge);
                 }
                 this->_link_mgr.do_unlink(link_to);
-                //delete to;
             }
         }
     }

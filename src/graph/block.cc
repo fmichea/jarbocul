@@ -63,14 +63,6 @@ void Block::merge(Block* other) {
     }
 }
 
-#if 0
-void Block::merge(Block* other) {
-    
-}
-#endif
-
-
-
 std::string SpecialBlock::name() {
     return Block::name() + "S";
 }

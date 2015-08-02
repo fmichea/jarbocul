@@ -31,11 +31,6 @@ public:
 
     void merge(Block* other);
 
-#if 0
-    void set_uniq(bool uniq);
-    void set_uniq_id(uint32_t id);
-#endif
-
     Instruction* op();
 
 public:
