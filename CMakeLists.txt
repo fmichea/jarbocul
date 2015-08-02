@@ -12,12 +12,24 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g3 -DDISASSEMBLER")
 # LDFLAGS used when linking jarbocul.
 SET(JARBOCUL_LDFLAGS "")
 SET(JARBOCUL_SRCS
-    src/graph/instruction.cc
     src/graph/block.cc
-    src/graph/link.cc
     src/graph/graph.cc
+    src/graph/instruction.cc
+    src/graph/link.cc
     src/main.cc
+    src/processors/gb_z80/disassembler.cc
 )
 
-ADD_EXECUTABLE(jarbocul ${JARBOCUL_SRCS})
+SET(JARBOCUL_DEFINITIONS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/processors/gb_z80/opcodes.gdef
+)
+
+# Compile definitions for GameBoy z80 processor.
+ADD_CUSTOM_COMMAND(
+    OUTPUT ${JARBOCUL_DEFINITIONS}
+    COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/src/processors/gb_z80/gen_opcode_defs.py
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/processors/gb_z80/gen_opcode_defs.py
+)
+
+ADD_EXECUTABLE(jarbocul ${JARBOCUL_SRCS} ${JARBOCUL_DEFINITIONS})
 TARGET_LINK_LIBRARIES(jarbocul ${JARBOCUL_LDFLAGS})
