@@ -16,33 +16,14 @@ Link::Link(Block* from, Block* to)
     : from (from)
     , to (to)
     , link_type (LINKTYPE_NORMAL)
-    //, _count (0)
 {}
-
-#if 0
-void Link::do_link(int n = 0) {
-    this->_count += n;
-}
-
-void Link::set_link_type(linktype t) {
-    this->_type = t;
-}
-#endif
 
 LinkMgr::LinkMgr()
 {}
 
 
-LinkMgr::~LinkMgr() {
-#if 0
-    for (Link* link : this->_links) {
-        delete link;
-    }
-    this->_links.clear();
-#endif
-}
-
-#include <iostream>
+LinkMgr::~LinkMgr()
+{}
 
 Link* LinkMgr::find_link(Block* from, Block* to, bool do_link) {
     Link* res = nullptr;
@@ -85,7 +66,6 @@ void LinkMgr::do_unlink(Link* link) {
     this->_links.erase(key);
     this->_del_link_from_idx(this->_link_sources_idx, link->to, link);
     this->_del_link_from_idx(this->_link_destinations_idx, link->from, link);
-
     delete link;
 }
 
@@ -93,11 +73,6 @@ void LinkMgr::_add_link_to_idx(LinkMgr::BlockToLinksIdx& idx,
                                Block* block,
                                Link* link)
 {
-    LinkMgr::BlockToLinksIdx::iterator it = idx.find(block->id());
-
-    if (it == idx.end()) {
-        idx[block->id()] = LinkMgr::BlockToLinksIdxValue();
-    }
     idx[block->id()].insert(link);
 }
 

@@ -32,6 +32,11 @@ private:
     int _fd;
     char* _data;
 
+    char* _allocated_data;
+
+    static const size_t RW_DATA_SZ = 1024 * 16;
+    char _rw_data[RW_DATA_SZ + 1];
+
     size_t _size;
     size_t _offset;
 };

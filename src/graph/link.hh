@@ -2,10 +2,11 @@
 #ifndef LINK_HH_
 # define LINK_HH_
 
-# include <string>
-# include <map>
+# include <iostream>
 # include <list>
+# include <map>
 # include <set>
+# include <string>
 
 # include "block.hh"
 
@@ -24,24 +25,11 @@ public:
     Link(Block* from, Block* to);
     virtual ~Link() {}
 
-#if 0
-    void set_link_type(linktype t);
-
-    void do_link(int n = 1);
-    void do_unlink();
-
-    void unlink_all();
-#endif
-
 public:
     Block* from;
     Block* to;
 
     linktype link_type;
-
-#if 0
-    uint64_t _count;
-#endif
 };
 
 
@@ -78,8 +66,8 @@ private:
 
     /* For faster access, index to the list of links from a source and from a
     ** destination.
-    **   - _link_sources_idx: block -> all blocks going to it
-    **   - _link_destinations_idx: block -> all the blocks it goes to */
+    **   - _link_sources_idx: block -> all links going to it
+    **   - _link_destinations_idx: block -> all links to blocks it goes to */
     BlockToLinksIdx _link_sources_idx;
     BlockToLinksIdx _link_destinations_idx;
 };

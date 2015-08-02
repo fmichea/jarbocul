@@ -71,18 +71,16 @@ Instruction* parse_line(const char* line) {
     return inst;
 }
 
-FT flowtype(Block* block, Block* last_block, uint16_t offset) {
+FT flowtype(Block* last_block, uint16_t offset) {
     FT ret = FLOWTYPE_INIT;
 
-    switch (last_block->insts.front()->opcode) {
+    switch (last_block->op()->opcode) {
     case 0xC0: case 0xC8: case 0xC9:
     case 0xD0: case 0xD8: case 0xD9:
         ret |= FLOWTYPE_OPCODE_RET;
         ret |= (offset != 1) ? FLOWTYPE_ACTION_TAKEN : FLOWTYPE_ACTION_NOTTAKEN;
-        return ret;
-    };
+        break;
 
-    switch (block->insts.front()->opcode) {
     case 0xC4: case 0xCC: case 0xCD:
     case 0xD4: case 0xDC:
         ret |= FLOWTYPE_OPCODE_CALL;
@@ -115,20 +113,23 @@ bool is_interrupt(Instruction* op) {
 }
 
 FileReader::FileReader(std::string filename)
-    : _offset (0)
+    : _allocated_data (nullptr)
+    , _offset (0)
 {
     struct stat st;
 
-    this->_fd = open(filename.c_str(), O_RDWR);
+    this->_fd = open(filename.c_str(), O_RDONLY);
 
     fstat(this->_fd, &st);
     this->_size = st.st_size;
 
-    void* data = mmap(NULL, this->_size, PROT_READ | PROT_WRITE, MAP_SHARED, this->_fd, 0);
+    void* data = mmap(NULL, this->_size, PROT_READ, MAP_SHARED, this->_fd, 0);
     this->_data = static_cast<char*>(data);
 }
 
 FileReader::~FileReader() {
+    if (this->_allocated_data != nullptr)
+        delete this->_allocated_data;
     munmap(this->_data, this->_size);
     close(this->_fd);
 }
@@ -140,9 +141,9 @@ bool FileReader::eof() {
 const char* FileReader::readline() {
     std::string result;
 
-    if (this->_offset != 0) {
-        this->_data[this->_offset] = '\n';
-        this->_offset += 1;
+    if (this->_allocated_data != nullptr) {
+        delete this->_allocated_data;
+        this->_allocated_data = nullptr;
     }
 
     const char* start = this->_data + this->_offset;
@@ -151,11 +152,18 @@ const char* FileReader::readline() {
     char* end = static_cast<char*>(memchr(start, '\n', len));
     if (end != nullptr) {
         len = static_cast<size_t>(end - start);
-        *end = 0;
     }
 
-    this->_offset += len;
-    return start;
+    char* res = this->_rw_data;
+    if (FileReader::RW_DATA_SZ < len) {
+        this->_allocated_data = new char[len + 1];
+        res = this->_allocated_data;
+    }
+    memcpy(res, start, len);
+    res[len] = 0;
+
+    this->_offset += len + 1;
+    return res;
 }
 
 Graph::Graph(std::string filename)
@@ -199,9 +207,11 @@ void Graph::generate_graph() {
 
         /* Create the list of blocks for the current PC in the blocks map if it
         ** does not exist yet. */
+#if 0
         if (blocks.count(op->pc) == 0) {
             blocks[op->pc] = std::list<Block*>();
         }
+#endif
 
         /* Check if we already know the current instruction for the current
         ** program counter. If we do, we keep the current block and add a
@@ -231,7 +241,7 @@ void Graph::generate_graph() {
         // Now we need to treat special cases.
         uint16_t offset = current_block->pc - last_block->pc;
 
-        FT ft = flowtype(last_block, current_block, offset);
+        FT ft = flowtype(last_block, offset);
 
         switch (ft & FLOWTYPE_OPCODE_MASK) {
         case FLOWTYPE_OPCODE_NONE:
@@ -246,7 +256,7 @@ void Graph::generate_graph() {
             if (!backtrace.empty()) {
                 Block* back = backtrace.top().first;
                 uint16_t size = backtrace.top().second;
-                if (size == 0 || op->pc == back->op()->pc + size || is_interrupt(op)) {
+                if (size == 0 || current_block->pc == back->pc + size || is_interrupt(op)) {
                     last_block = back;
                     //delete link;
                     link = this->_link_mgr.find_link(last_block, current_block);
@@ -266,6 +276,7 @@ void Graph::generate_graph() {
                 if (!last_block->tlf) {
                     current_block->block_type = BLOCKTYPE_SUB;
                     link->link_type = LINKTYPE_CALL_TAKEN;
+                    last_block->tlf = true;
                 }
                 backtrace.push(std::pair<Block*, uint16_t>(last_block, 3));
                 break;
@@ -293,10 +304,19 @@ void Graph::generate_graph() {
         };
 
         if (is_interrupt(op)) {
+            uint16_t size = 0;
             // Block type is an interrupt.
             current_block->block_type = BLOCKTYPE_INT;
+            // If the block is an opcode that calls an interrupt, then we set
+            // the size to the size of that opcode instead of 0.
+            for (uint16_t tmp = 0xC7; tmp < 0x100; tmp += 0x8) {
+                if (tmp == last_block->op()->opcode) {
+                    size = 1;
+                    break;
+                }
+            }
             // Backtrace must be updated while we are in the interrupt.
-            backtrace.push(std::pair<Block*, uint16_t>(last_block, 0));
+            backtrace.push(std::pair<Block*, uint16_t>(last_block, size));
             // We can get rid of the link now.
             delete link;
             link = nullptr;
