@@ -149,7 +149,7 @@ const char* FileReader::readline() {
     const char* start = this->_data + this->_offset;
     size_t len = this->_size - this->_offset;
 
-    char* end = static_cast<char*>(memchr(start, '\n', len));
+    const char* end = static_cast<const char*>(memchr(start, '\n', len));
     if (end != nullptr) {
         len = static_cast<size_t>(end - start);
     }
