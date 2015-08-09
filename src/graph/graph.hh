@@ -7,18 +7,21 @@
 
 # include <list>
 # include <map>
+# include <queue>
+# include <set>
 # include <stack>
 # include <string>
 
 # include <fcntl.h>
-# include <unistd.h>
 # include <string.h>
 # include <sys/mman.h>
 # include <sys/stat.h>
+# include <unistd.h>
 
+# include "../lib/flowtype.hh"
+# include "../processors/gb_z80/disassembler.hh"
 # include "block.hh"
 # include "link.hh"
-# include "../processors/gb_z80/disassembler.hh"
 
 class FileReader {
 public:

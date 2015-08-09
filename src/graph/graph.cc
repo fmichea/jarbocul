@@ -1,22 +1,6 @@
 #include "graph.hh"
 
-typedef uint32_t FT;
-
-#define FLOWTYPE_OPCODE_MASK        0x00FF
-#define FLOWTYPE_ACTION_MASK        0xFF00
-
-#define FLOWTYPE_INIT               0x0000
-
-#define FLOWTYPE_OPCODE_NONE        0x0000
-#define FLOWTYPE_OPCODE_RET         0x0001
-#define FLOWTYPE_OPCODE_CALL        0x0002
-#define FLOWTYPE_OPCODE_JUMP        0x0003
-
-#define FLOWTYPE_ACTION_NOTTAKEN    0x0100
-#define FLOWTYPE_ACTION_TAKEN       0x0200
-
-#include <queue>
-#include <set>
+namespace ft_np = jarbocul::lib::flowtype;
 
 void cutfunction(LinkMgr& link_mgr,
                  std::map<uint16_t, std::list<Block*>>& blocks,
@@ -71,36 +55,40 @@ Instruction* parse_line(const char* line) {
     return inst;
 }
 
-FT flowtype(Block* last_block, uint16_t offset) {
-    FT ret = FLOWTYPE_INIT;
+ft_np::FT flowtype(Block* last_block, uint16_t offset) {
+    ft_np::flowtype_opcode_type opcode_type = ft_np::FLOWTYPE_OPCODE_NONE;
+    uint16_t opcode_size = 0;
 
     switch (last_block->op()->opcode) {
     case 0xC0: case 0xC8: case 0xC9:
     case 0xD0: case 0xD8: case 0xD9:
-        ret |= FLOWTYPE_OPCODE_RET;
-        ret |= (offset != 1) ? FLOWTYPE_ACTION_TAKEN : FLOWTYPE_ACTION_NOTTAKEN;
+        opcode_type = ft_np::FLOWTYPE_OPCODE_RET;
+        opcode_size = 1;
         break;
 
     case 0xC4: case 0xCC: case 0xCD:
     case 0xD4: case 0xDC:
-        ret |= FLOWTYPE_OPCODE_CALL;
-        ret |= (offset != 3) ? FLOWTYPE_ACTION_TAKEN : FLOWTYPE_ACTION_NOTTAKEN;
+        opcode_type = ft_np::FLOWTYPE_OPCODE_CALL;
+        opcode_size = 3;
         break;
 
     case 0xC2: case 0xC3: case 0xCA:
     case 0xD2: case 0xDA:
     case 0xE9:
-        ret |= FLOWTYPE_OPCODE_JUMP;
-        ret |= (offset != 3) ? FLOWTYPE_ACTION_TAKEN : FLOWTYPE_ACTION_NOTTAKEN;
+        opcode_type = ft_np::FLOWTYPE_OPCODE_JUMP;
+        opcode_size = 3;
         break;
 
     case 0x18:
     case 0x20: case 0x28:
     case 0x30: case 0x38:
-        ret |= FLOWTYPE_OPCODE_JUMP; // Relative jump.
-        ret |= (offset != 2) ? FLOWTYPE_ACTION_TAKEN : FLOWTYPE_ACTION_NOTTAKEN;
+        opcode_type = ft_np::FLOWTYPE_OPCODE_JUMP; // Relative jump.
+        opcode_size = 2;
         break;
     };
+
+    ft_np::FT ret(opcode_type);
+    ret.set_taken(offset != opcode_size);
     return ret;
 }
 
@@ -233,14 +221,14 @@ void Graph::generate_graph() {
         // Now we need to treat special cases.
         uint16_t offset = current_block->pc - last_block->pc;
 
-        FT ft = flowtype(last_block, offset);
+        const ft_np::FT ft = flowtype(last_block, offset);
 
-        switch (ft & FLOWTYPE_OPCODE_MASK) {
-        case FLOWTYPE_OPCODE_NONE:
+        switch (ft.opcode_type()) {
+        case ft_np::FLOWTYPE_OPCODE_NONE:
             break;
 
-        case FLOWTYPE_OPCODE_RET:
-            if ((ft & FLOWTYPE_ACTION_MASK) == FLOWTYPE_ACTION_NOTTAKEN)
+        case ft_np::FLOWTYPE_OPCODE_RET:
+            if (!ft.taken())
                 break;
 
             /* We have a ret, and it triggered. In that case, we will try to
@@ -262,35 +250,27 @@ void Graph::generate_graph() {
             link->link_type = LINKTYPE_RET_MISS;
             break;
 
-        case FLOWTYPE_OPCODE_CALL:
-            switch (ft & FLOWTYPE_ACTION_MASK) {
-            case FLOWTYPE_ACTION_TAKEN:
+        case ft_np::FLOWTYPE_OPCODE_CALL:
+            if (ft.taken()) {
                 if (!last_block->tlf) {
                     current_block->block_type = BLOCKTYPE_SUB;
                     link->link_type = LINKTYPE_CALL_TAKEN;
                     last_block->tlf = true;
                 }
                 backtrace.push(std::pair<Block*, uint16_t>(last_block, 3));
-                break;
-
-            case FLOWTYPE_ACTION_NOTTAKEN:
+            } else {
                 link->link_type = LINKTYPE_NOT_TAKEN;
-                break;
             };
             break;
 
-        case FLOWTYPE_OPCODE_JUMP:
-            switch (ft & FLOWTYPE_ACTION_MASK) {
-            case FLOWTYPE_ACTION_TAKEN:
+        case ft_np::FLOWTYPE_OPCODE_JUMP:
+            if (ft.taken()) {
                 if (!last_block->tlf) {
                     link->link_type = LINKTYPE_TAKEN;
                     last_block->tlf = true;
                 }
-                break;
-
-            case FLOWTYPE_ACTION_NOTTAKEN:
+            } else {
                 link->link_type = LINKTYPE_NOT_TAKEN;
-                break;
             };
             break;
         };
