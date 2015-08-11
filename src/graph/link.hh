@@ -20,40 +20,41 @@ typedef enum linktype_e {
 
 std::string linktype2str(linktype t);
 
+template <typename CPU>
 class Link {
 public:
-    Link(Block* from, Block* to);
+    Link(Block<CPU>* from, Block<CPU>* to);
     virtual ~Link() {}
 
 public:
-    Block* from;
-    Block* to;
+    Block<CPU>* from;
+    Block<CPU>* to;
 
     linktype link_type;
 };
 
-
+template <typename CPU>
 class LinkMgr {
 public:
     LinkMgr();
     virtual ~LinkMgr();
 
-    Link* find_link(Block* from, Block* to, bool do_link=false);
+    Link<CPU>* find_link(Block<CPU>* from, Block<CPU>* to, bool do_link=false);
 
-    void do_link(Link* link);
-    void do_unlink(Link* link);
+    void do_link(Link<CPU>* link);
+    void do_unlink(Link<CPU>* link);
 
-    bool accepts_merge_bottom(Block* block);
-    bool accepts_merge_top(Block* block);
+    bool accepts_merge_bottom(Block<CPU>* block);
+    bool accepts_merge_top(Block<CPU>* block);
 
-    std::set<Link*> get_all_links_to_block(Block* block);
-    std::set<Link*> get_all_links_from_block(Block* block);
+    BlockToLinksIdxValue get_all_links_to_block(Block<CPU>* block);
+    BlockToLinksIdxValue get_all_links_from_block(Block<CPU>* block);
 
 private:
     typedef std::pair<BlockId, BlockId> BlocksToLinkMapKey;
-    typedef std::map<BlocksToLinkMapKey, Link*> BlocksToLinkMap;
+    typedef std::map<BlocksToLinkMapKey, Link<CPU>*> BlocksToLinkMap;
 
-    typedef std::set<Link*> BlockToLinksIdxValue;
+    typedef std::set<Link<CPU>*> BlockToLinksIdxValue;
     typedef std::map<BlockId, BlockToLinksIdxValue> BlockToLinksIdx;
 
 private:

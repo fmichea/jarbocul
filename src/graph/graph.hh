@@ -45,6 +45,7 @@ private:
     size_t _offset;
 };
 
+template <typename CPU>
 class Graph {
 public:
     Graph(std::string filename);
@@ -57,8 +58,10 @@ private:
 
     LinkMgr _link_mgr;
 
-    SpecialBlock* _begin;
-    SpecialBlock* _end;
+    SpecialBlock<CPU>* _begin;
+    SpecialBlock<CPU>* _end;
+
+    std::map<cpu_traits<CPU>::Addr, std::list<Block<CPU>*>> _blocks;
 };
 
 #endif /* !GRAPH_HH_ */

@@ -21,49 +21,55 @@ std::string blocktype2str(blocktype t);
 
 typedef uint64_t BlockId;
 
+template <typename CPU>
 class Block {
 public:
-    Block(Instruction* inst);
+    Block(Instruction<CPU>* inst);
     virtual ~Block();
 
-    virtual std::string name() ;
-    virtual BlockId id() ;
+    virtual std::string name();
+    // virtual BlockId id();
 
-    void merge(Block* other);
+    void merge(Block<CPU>* other);
 
-    Instruction* op();
+    Instruction<CPU>* op();
 
-public:
-    uint16_t& pc;
+    cpu_traits<CPU>::Addr pc();
 
-    blocktype block_type;
+    void set_uniq_id(uint32_t uniq_id);
+    void set_block_type(blocktype block_type);
 
-    bool uniq;
-    uint32_t uniq_id;
-
-    bool tlf;
-
-    std::list<Instruction*> insts;
-
-    std::list<std::string> within;
-
-    bool mergeable;
-
+private:
     virtual const char* _sep()  { return "_"; };
+
+private:
+    blocktype _block_type;
+
+    std::list<Instruction<CPU>*> _insts;
+
+    bool _uniq;
+    uint32_t _uniq_id;
+
+    std::list<std::string> _within;
+
+    bool _mergeable;
 };
 
-class SpecialBlock : public Block {
+template <typename CPU>
+class SpecialBlock : public Block<CPU> {
 public:
-    SpecialBlock() : Block(new Instruction()) {
-        Instruction* instr = this->insts.front();
+    SpecialBlock() : Block(new Instruction<CPU>()) {
+        Instruction<CPU>* instr = this->insts.front();
 
-        instr->pc = 0;
+        instr->set_pc(0);
     }
 
-    std::string name() ;
+    std::string name();
 
 private:
     const char* _sep()  { return "_1"; };
 };
+
+# include "block.hxx"
 
 #endif /* !BLOCK_HH_ */

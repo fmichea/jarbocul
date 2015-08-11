@@ -1,104 +1,6 @@
 #include "graph.hh"
 
-namespace ft_np = jarbocul::lib::flowtype;
 
-void cutfunction(LinkMgr& link_mgr,
-                 std::map<uint16_t, std::list<Block*>>& blocks,
-                 Block* func)
-{
-    std::queue<Block*> todos;
-    std::set<BlockId> done;
-
-    todos.push(func);
-    while (!todos.empty()) {
-        Block* todo = todos.front();
-        todos.pop();
-
-        if (done.count(todo->id()) != 0) {
-            continue;
-        }
-        done.insert(todo->id());
-
-        blocks[todo->pc].remove(todo);
-
-        todo->within.push_back(func->name());
-
-        for (Link* link : link_mgr.get_all_links_from_block(todo)) {
-            todos.push(link->to);
-        }
-    }
-}
-
-Instruction* parse_line(const char* line) {
-    if (strlen(line) != 41)
-        return nullptr;
-
-    Instruction* inst = new Instruction();
-
-    char pc[5];
-    memcpy(pc, line + 12, 4);
-    pc[4] = 0;
-    inst->pc = strtol(pc, NULL, 16);
-
-    char opcode[3];
-    memcpy(opcode, line + 27, 2);
-    opcode[2] = 0;
-    inst->opcode = strtol(opcode, NULL, 16);
-
-    char data[3];
-    memcpy(data, line + 37, 2);
-    data[2] = 0;
-    inst->data[0] = strtol(data, NULL, 16);
-    memcpy(data, line + 39, 2);
-    inst->data[1] = strtol(data, NULL, 16);
-
-    return inst;
-}
-
-ft_np::FT flowtype(Block* last_block, uint16_t offset) {
-    ft_np::flowtype_opcode_type opcode_type = ft_np::FLOWTYPE_OPCODE_NONE;
-    uint16_t opcode_size = 0;
-
-    switch (last_block->op()->opcode) {
-    case 0xC0: case 0xC8: case 0xC9:
-    case 0xD0: case 0xD8: case 0xD9:
-        opcode_type = ft_np::FLOWTYPE_OPCODE_RET;
-        opcode_size = 1;
-        break;
-
-    case 0xC4: case 0xCC: case 0xCD:
-    case 0xD4: case 0xDC:
-        opcode_type = ft_np::FLOWTYPE_OPCODE_CALL;
-        opcode_size = 3;
-        break;
-
-    case 0xC2: case 0xC3: case 0xCA:
-    case 0xD2: case 0xDA:
-    case 0xE9:
-        opcode_type = ft_np::FLOWTYPE_OPCODE_JUMP;
-        opcode_size = 3;
-        break;
-
-    case 0x18:
-    case 0x20: case 0x28:
-    case 0x30: case 0x38:
-        opcode_type = ft_np::FLOWTYPE_OPCODE_JUMP; // Relative jump.
-        opcode_size = 2;
-        break;
-    };
-
-    ft_np::FT ret(opcode_type);
-    ret.set_taken(offset != opcode_size);
-    return ret;
-}
-
-bool is_interrupt(Instruction* op) {
-    for (uint16_t addr = 0x0000; addr <= 0x0060; addr += 0x8) {
-        if (op->pc == addr)
-            return true;
-    }
-    return false;
-}
 
 FileReader::FileReader(std::string filename)
     : _allocated_data (nullptr)
@@ -154,32 +56,34 @@ const char* FileReader::readline() {
     return res;
 }
 
-Graph::Graph(std::string filename)
+template <typename CPU>
+Graph<CPU>::Graph<CPU>(std::string filename)
     : _file (filename)
 {}
 
-Graph::~Graph() {}
+template <typename CPU>
+Graph<CPU>::~Graph<CPU>() {}
 
-void Graph::generate_graph() {
+template <typename CPU>
+void Graph<CPU>::generate_graph() {
     const char* line;
 
-    std::map<uint16_t, std::list<Block*>> blocks;
-    std::stack<std::pair<Block*, uint16_t>> backtrace;
+    std::stack<std::pair<Block<CPU>*, cpu_traits<CPU>::Addr>> backtrace;
 
-    Block* last_block;
-    Block* current_block;
+    Block<CPU>* last_block;
+    Block<CPU>* current_block;
 
-    Link* link;
+    Link<CPU>* link;
 
-    Instruction* op;
+    Instruction<CPU>* op;
 
     /**************************************************************************
      ***** STEP 1: Fetch the graph from the log file.                     *****
      **************************************************************************/
 
     // Create special block for the beginning of the logs.
-    this->_begin = new SpecialBlock();
-    this->_begin->block_type = BLOCKTYPE_SUB;
+    this->_begin = new SpecialBlock<CPU>();
+    this->_begin->set_block_type(BLOCKTYPE_SUB);
 
     // Use the first block as first "last_block".
     last_block = this->_begin;
@@ -187,7 +91,7 @@ void Graph::generate_graph() {
     while (!this->_file.eof()) {
         line = this->_file.readline();
 
-        op = parse_line(line);
+        op = parse_line<CPU>(line);
 
         // If line is not recognized, just skip it.
         if (op == nullptr)
@@ -197,31 +101,30 @@ void Graph::generate_graph() {
         ** program counter. If we do, we keep the current block and add a
         ** link. */
         current_block = nullptr;
-        for (Block* known : blocks[op->pc]) {
-            if (op->opcode == known->insts.front()->opcode) {
+        for (Block* known : blocks[op->pc()]) {
+            if (op->op() == known->op()) {
                 current_block = known;
                 break;
             }
         }
         if (current_block == nullptr) {
-            current_block = new Block(op);
-            if (0 < blocks[op->pc].size()) {
+            current_block = new Block<CPU>(op);
+            if (0 < blocks[op->pc()].size()) {
                 /* No loop needed, if we set the first one and each one
                 ** starting from the second, we will set them all. */
-                current_block->uniq = false;
-                current_block->uniq_id = blocks.count(op->pc);
-                blocks[op->pc].front()->uniq = false;
+                current_block->set_uniq_id(blocks.count(op->pc));
+                blocks[op->pc()].front()->set_uniq_id(0);
             }
-            blocks[op->pc].push_back(current_block);
+            blocks[op->pc()].push_back(current_block);
         }
 
         // Now we need to link the current block with the last one.
         link = this->_link_mgr.find_link(last_block, current_block);
 
         // Now we need to treat special cases.
-        uint16_t offset = current_block->pc - last_block->pc;
+        AddrOffset<CPU> offset(last_block->pc(), current_block->pc());
 
-        const ft_np::FT ft = flowtype(last_block, offset);
+        const ft_np::FT ft = flowtype<CPU>(last_block, offset);
 
         switch (ft.opcode_type()) {
         case ft_np::FLOWTYPE_OPCODE_NONE:
@@ -527,5 +430,30 @@ void Graph::generate_graph() {
 
         out << "}" << std::endl;
         out.close();
+    }
+}
+
+template <typename CPU>
+void cutfunction(Block<CPU>* func) {
+    std::queue<Block<CPU>*> todos;
+    std::set<BlockId> done;
+
+    todos.push(func);
+    while (!todos.empty()) {
+        Block* todo = todos.front();
+        todos.pop();
+
+        if (done.count(todo->id()) != 0) {
+            continue;
+        }
+        done.insert(todo->id());
+
+        blocks[todo->pc].remove(todo);
+
+        todo->within.push_back(func->name());
+
+        for (Link* link : link_mgr.get_all_links_from_block(todo)) {
+            todos.push(link->to);
+        }
     }
 }
