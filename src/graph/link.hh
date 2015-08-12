@@ -51,10 +51,12 @@ public:
     BlockToLinksIdxValue get_all_links_from_block(Block<CPU>* block);
 
 private:
+    typedef std::set<Link<CPU>*> BlockToLinksIdxValue;
+
+private:
     typedef std::pair<BlockId, BlockId> BlocksToLinkMapKey;
     typedef std::map<BlocksToLinkMapKey, Link<CPU>*> BlocksToLinkMap;
 
-    typedef std::set<Link<CPU>*> BlockToLinksIdxValue;
     typedef std::map<BlockId, BlockToLinksIdxValue> BlockToLinksIdx;
 
 private:
@@ -72,5 +74,7 @@ private:
     BlockToLinksIdx _link_sources_idx;
     BlockToLinksIdx _link_destinations_idx;
 };
+
+# include "link.hxx"
 
 #endif /* !LINK_HH_ */

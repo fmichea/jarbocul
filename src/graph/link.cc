@@ -12,31 +12,34 @@ std::string linktype2str(linktype t) {
 }
 
 
-Link::Link(Block* from, Block* to)
+template <typename CPU>
+Link<CPU>::Link<CPU>(Block<CPU>* from, Block<CPU>* to)
     : from (from)
     , to (to)
     , link_type (LINKTYPE_NORMAL)
 {}
 
-LinkMgr::LinkMgr()
+template <typename CPU>
+LinkMgr<CPU>::LinkMgr<CPU>()
 {}
 
-
-LinkMgr::~LinkMgr()
+template <typename CPU>
+LinkMgr<CPU>::~LinkMgr<CPU>()
 {}
 
-Link* LinkMgr::find_link(Block* from, Block* to, bool do_link) {
-    Link* res = nullptr;
+template <typename CPU>
+Link<CPU>* LinkMgr<CPU>::find_link(Block<CPU>* from, Block<CPU>* to, bool do_link) {
+    Link<CPU>* res = nullptr;
 
-    LinkMgr::BlocksToLinkMapKey key(from->id(), to->id());
-    LinkMgr::BlocksToLinkMap::iterator it = this->_links.find(key);
+    LinkMgr<CPU>::BlocksToLinkMapKey key(from->id(), to->id());
+    LinkMgr<CPU>::BlocksToLinkMap::iterator it = this->_links.find(key);
 
     if (it != this->_links.end()) {
         res = it->second;
     }
 
     if (res == nullptr) {
-        res = new Link(from, to);
+        res = new Link<CPU>(from, to);
     }
 
     if (do_link) {
@@ -46,22 +49,24 @@ Link* LinkMgr::find_link(Block* from, Block* to, bool do_link) {
     return res;
 }
 
-void LinkMgr::do_link(Link* link) {
+template <typename CPU>
+void LinkMgr<CPU>::do_link(Link<CPU>* link) {
     if (link == nullptr)
         return;
 
-    LinkMgr::BlocksToLinkMapKey key(link->from->id(), link->to->id());
+    LinkMgr<CPU>::BlocksToLinkMapKey key(link->from->id(), link->to->id());
 
     this->_links[key] = link;
     this->_add_link_to_idx(this->_link_sources_idx, link->to, link);
     this->_add_link_to_idx(this->_link_destinations_idx, link->from, link);
 }
 
-void LinkMgr::do_unlink(Link* link) {
+template <typename CPU>
+void LinkMgr<CPU>::do_unlink(Link<CPU>* link) {
     if (link == nullptr)
         return;
 
-    LinkMgr::BlocksToLinkMapKey key(link->from->id(), link->to->id());
+    LinkMgr<CPU>::BlocksToLinkMapKey key(link->from->id(), link->to->id());
 
     this->_links.erase(key);
     this->_del_link_from_idx(this->_link_sources_idx, link->to, link);
@@ -69,42 +74,48 @@ void LinkMgr::do_unlink(Link* link) {
     delete link;
 }
 
-void LinkMgr::_add_link_to_idx(LinkMgr::BlockToLinksIdx& idx,
-                               Block* block,
-                               Link* link)
+template <typename CPU>
+void LinkMgr<CPU>::_add_link_to_idx(LinkMgr<CPU>::BlockToLinksIdx& idx,
+                                    Block<CPU>* block,
+                                    Link<CPU>* link)
 {
     idx[block->id()].insert(link);
 }
 
-void LinkMgr::_del_link_from_idx(BlockToLinksIdx& idx,
-                                 Block* block,
-                                 Link* link)
+template <typename CPU>
+void LinkMgr<CPU>::_del_link_from_idx(BlockToLinksIdx<CPU>& idx,
+                                      Block<CPU>* block,
+                                      Link<CPU>* link)
 {
-    LinkMgr::BlockToLinksIdx::iterator it = idx.find(block->id());
+    LinkMgr<CPU>::BlockToLinksIdx::iterator it = idx.find(block->id());
 
     if (it != idx.end()) {
         it->second.erase(link);
     }
 }
 
-bool LinkMgr::accepts_merge_bottom(Block* block) {
+template <typename CPU>
+bool LinkMgr<CPU>::accepts_merge_bottom(Block<CPU>* block) {
     return this->_idx_contains_one_link_for_block(
         this->_link_destinations_idx,
         block
     );
 }
 
-bool LinkMgr::accepts_merge_top(Block* block) {
+template <typename CPU>
+bool LinkMgr<CPU>::accepts_merge_top(Block<CPU>* block) {
     return this->_idx_contains_one_link_for_block(
         this->_link_sources_idx,
         block
     );
 }
 
-bool LinkMgr::_idx_contains_one_link_for_block(BlockToLinksIdx& idx,
-                                               Block* block)
+template <typename CPU>
+bool LinkMgr<CPU>::_idx_contains_one_link_for_block(
+    LinkMgr<CPU>::BlockToLinksIdx& idx,
+    Block<CPU>* block)
 {
-    LinkMgr::BlockToLinksIdx::iterator it = idx.find(block->id());
+    LinkMgr<CPU>::BlockToLinksIdx::iterator it = idx.find(block->id());
 
     //assert(it != idx.end());
     if (it == idx.end()) {
@@ -115,7 +126,8 @@ bool LinkMgr::_idx_contains_one_link_for_block(BlockToLinksIdx& idx,
     return it->second.size() == 1;
 }
 
-std::set<Link*> LinkMgr::get_all_links_to_block(Block* block) {
+template <typename CPU>
+ LinkMgr::get_all_links_to_block(Block* block) {
     return this->_link_sources_idx[block->id()];
 }
 
