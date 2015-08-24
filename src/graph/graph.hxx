@@ -1,74 +1,26 @@
-#include "graph.hh"
+#pragma once
+#ifndef JARBOCUL_GRAPH_GRAPH_HXX_
+# define JARBOCUL_GRAPH_GRAPH_HXX_
 
-
-
-FileReader::FileReader(std::string filename)
-    : _allocated_data (nullptr)
-    , _offset (0)
-{
-    struct stat st;
-
-    this->_fd = open(filename.c_str(), O_RDONLY);
-
-    fstat(this->_fd, &st);
-    this->_size = st.st_size;
-
-    void* data = mmap(NULL, this->_size, PROT_READ, MAP_SHARED, this->_fd, 0);
-    this->_data = static_cast<char*>(data);
-}
-
-FileReader::~FileReader() {
-    if (this->_allocated_data != nullptr)
-        delete this->_allocated_data;
-    munmap(this->_data, this->_size);
-    close(this->_fd);
-}
-
-bool FileReader::eof() {
-    return this->_offset == this->_size;
-}
-
-const char* FileReader::readline() {
-    std::string result;
-
-    if (this->_allocated_data != nullptr) {
-        delete this->_allocated_data;
-        this->_allocated_data = nullptr;
-    }
-
-    const char* start = this->_data + this->_offset;
-    size_t len = this->_size - this->_offset;
-
-    const char* end = static_cast<const char*>(memchr(start, '\n', len));
-    if (end != nullptr) {
-        len = static_cast<size_t>(end - start);
-    }
-
-    char* res = this->_rw_data;
-    if (FileReader::RW_DATA_SZ < len) {
-        this->_allocated_data = new char[len + 1];
-        res = this->_allocated_data;
-    }
-    memcpy(res, start, len);
-    res[len] = 0;
-
-    this->_offset += len + 1;
-    return res;
-}
+# include "graph.hh"
 
 template <typename CPU>
-Graph<CPU>::Graph<CPU>(std::string filename)
+Graph<CPU>::Graph(std::string filename)
     : _file (filename)
+    , _link_mgr ()
+    , _begin (nullptr)
+    , _end (nullptr)
+    , _blocks ()
+    , _backtrace ()
 {}
 
 template <typename CPU>
-Graph<CPU>::~Graph<CPU>() {}
+Graph<CPU>::~Graph()
+{}
 
 template <typename CPU>
 void Graph<CPU>::generate_graph() {
     const char* line;
-
-    std::stack<std::pair<Block<CPU>*, cpu_traits<CPU>::Addr>> backtrace;
 
     Block<CPU>* last_block;
     Block<CPU>* current_block;
@@ -91,7 +43,7 @@ void Graph<CPU>::generate_graph() {
     while (!this->_file.eof()) {
         line = this->_file.readline();
 
-        op = parse_line<CPU>(line);
+        op = cpu_functions<CPU>::parse_line(line);
 
         // If line is not recognized, just skip it.
         if (op == nullptr)
@@ -101,21 +53,21 @@ void Graph<CPU>::generate_graph() {
         ** program counter. If we do, we keep the current block and add a
         ** link. */
         current_block = nullptr;
-        for (Block* known : blocks[op->pc()]) {
-            if (op->op() == known->op()) {
+        for (Block<CPU>* known : this->_blocks[op->pc()]) {
+            if (op == known->op()) {
                 current_block = known;
                 break;
             }
         }
         if (current_block == nullptr) {
             current_block = new Block<CPU>(op);
-            if (0 < blocks[op->pc()].size()) {
+            if (0 < this->_blocks[op->pc()].size()) {
                 /* No loop needed, if we set the first one and each one
                 ** starting from the second, we will set them all. */
-                current_block->set_uniq_id(blocks.count(op->pc));
-                blocks[op->pc()].front()->set_uniq_id(0);
+                current_block->set_uniq_id(this->_blocks.count(op->pc()));
+                this->_blocks[op->pc()].front()->set_uniq_id(0);
             }
-            blocks[op->pc()].push_back(current_block);
+            this->_blocks[op->pc()].push_back(current_block);
         }
 
         // Now we need to link the current block with the last one.
@@ -124,74 +76,72 @@ void Graph<CPU>::generate_graph() {
         // Now we need to treat special cases.
         AddrOffset<CPU> offset(last_block->pc(), current_block->pc());
 
-        const ft_np::FT ft = flowtype<CPU>(last_block, offset);
+        const jarbocul::lib::flowtype::FT ft = cpu_functions<CPU>::flowtype(last_block, offset);
 
         switch (ft.opcode_type()) {
-        case ft_np::FLOWTYPE_OPCODE_NONE:
+        case jarbocul::lib::flowtype::FLOWTYPE_OPCODE_NONE:
             break;
 
-        case ft_np::FLOWTYPE_OPCODE_RET:
+        case jarbocul::lib::flowtype::FLOWTYPE_OPCODE_RET:
             if (!ft.taken())
                 break;
 
             /* We have a ret, and it triggered. In that case, we will try to
             ** use our backtrace to go where we were called. */
-            if (!backtrace.empty()) {
-                Block* back = backtrace.top().first;
-                uint16_t size = backtrace.top().second;
-                if (size == 0 || current_block->pc == back->pc + size || is_interrupt(op)) {
+            if (!this->_backtrace.empty()) {
+                Block<CPU>* back = this->_backtrace.top().first;
+                uint16_t size = this->_backtrace.top().second;
+                if (size == 0 || current_block->pc() == back->pc() + size ||
+                    cpu_functions<CPU>::is_interrupt(op)) {
                     last_block = back;
                     //delete link;
                     link = this->_link_mgr.find_link(last_block, current_block);
-                    backtrace.pop();
+                    this->_backtrace.pop();
                     break;
                 }
             }
             /* If we reached this point, it means that the backtrace didn't
             ** point to any place where we didn't come with a call from. In
             ** that case, we set the link as a return miss link. */
-            link->link_type = LINKTYPE_RET_MISS;
+            link->set_link_type(LINKTYPE_RET_MISS);
             break;
 
-        case ft_np::FLOWTYPE_OPCODE_CALL:
+        case jarbocul::lib::flowtype::FLOWTYPE_OPCODE_CALL:
             if (ft.taken()) {
-                if (!last_block->tlf) {
-                    current_block->block_type = BLOCKTYPE_SUB;
-                    link->link_type = LINKTYPE_CALL_TAKEN;
-                    last_block->tlf = true;
+                if (!this->_link_mgr.triggering_link_found(last_block)) {
+                    current_block->set_block_type(BLOCKTYPE_SUB);
+                    link->set_link_type(LINKTYPE_CALL_TAKEN);
+                    this->_link_mgr.set_triggering_link_found(last_block);
                 }
-                backtrace.push(std::pair<Block*, uint16_t>(last_block, 3));
+                this->_backtrace.push(std::pair<Block<CPU>*, uint16_t>(last_block, 3));
             } else {
-                link->link_type = LINKTYPE_NOT_TAKEN;
+                link->set_link_type(LINKTYPE_NOT_TAKEN);
             };
             break;
 
-        case ft_np::FLOWTYPE_OPCODE_JUMP:
+        case jarbocul::lib::flowtype::FLOWTYPE_OPCODE_JUMP:
             if (ft.taken()) {
-                if (!last_block->tlf) {
-                    link->link_type = LINKTYPE_TAKEN;
-                    last_block->tlf = true;
+                if (!this->_link_mgr.triggering_link_found(last_block)) {
+                    link->set_link_type(LINKTYPE_TAKEN);
+                    this->_link_mgr.set_triggering_link_found(last_block);
                 }
             } else {
-                link->link_type = LINKTYPE_NOT_TAKEN;
+                link->set_link_type(LINKTYPE_NOT_TAKEN);
             };
             break;
         };
 
-        if (is_interrupt(op)) {
+        if (cpu_functions<CPU>::is_interrupt(op)) {
             uint16_t size = 0;
             // Block type is an interrupt.
-            current_block->block_type = BLOCKTYPE_INT;
+            current_block->set_block_type(BLOCKTYPE_INT);
             // If the block is an opcode that calls an interrupt, then we set
             // the size to the size of that opcode instead of 0.
-            for (uint16_t tmp = 0xC7; tmp < 0x100; tmp += 0x8) {
-                if (tmp == last_block->op()->opcode) {
-                    size = 1;
-                    break;
-                }
+            if (cpu_functions<CPU>::is_interrupt_call(last_block->op())) {
+                size = 1; // FIXME
             }
             // Backtrace must be updated while we are in the interrupt.
-            backtrace.push(std::pair<Block*, uint16_t>(last_block, size));
+            this->_backtrace.push(std::pair<Block<CPU>*, uint16_t>(last_block, size));
             // We can get rid of the link now.
             delete link;
             link = nullptr;
@@ -205,7 +155,7 @@ void Graph<CPU>::generate_graph() {
         last_block = current_block;
     }
 
-    this->_end = new SpecialBlock();
+    this->_end = new SpecialBlock<CPU>();
     this->_link_mgr.find_link(last_block, this->_end, true);
 
     /***************************************************************************
@@ -213,32 +163,31 @@ void Graph<CPU>::generate_graph() {
      *****         unmergeable, that will only contain the name of the     *****
      *****         functions.                                              *****
      **************************************************************************/
-    std::list<Block*> functions;
+    std::list<Block<CPU>*> functions;
 
     functions.push_back(this->_begin);
-    for (std::pair<uint16_t, std::list<Block*> > _ : blocks) {
-        for (Block* block : _.second) {
+    for (std::pair<uint16_t, std::list<Block<CPU>*> > _ : this->_blocks) {
+        for (Block<CPU>* block : _.second) {
             // If we did interrupts correctly, we don't have any link that come
             // to it, we just need to put it in the function list.
-            if (block->block_type == BLOCKTYPE_INT)
+            if (block->block_type() == BLOCKTYPE_INT)
                 functions.push_back(block);
 
             // We only care about subs from here.
-            if (block->block_type != BLOCKTYPE_SUB)
+            if (block->block_type() != BLOCKTYPE_SUB)
                 continue;
 
             // For each link, if it's a call link (it is marked as "taken"),
             // then we remove this link and place a little box instead, to be
             // able to split the functions' graphs in multiple files.
-            for (Link* link : this->_link_mgr.get_all_links_to_block(block)) {
-                if (link->link_type != LINKTYPE_CALL_TAKEN)
+            for (Link<CPU>* link : this->_link_mgr.get_all_links_to_block(block)) {
+                if (link->link_type() != LINKTYPE_CALL_TAKEN)
                     continue;
-                Block* call_block = new SpecialBlock();
-                call_block->mergeable = false;
-                call_block->op()->pc = block->op()->pc;
-                // FIXME: call_block->set_mergeable(false);
-                Link* call_link = this->_link_mgr.find_link(link->from, call_block, true);
-                call_link->link_type = LINKTYPE_CALL_TAKEN;
+                Block<CPU>* call_block = new SpecialBlock<CPU>();
+                call_block->set_mergeable(false);
+                call_block->op()->set_pc(block->op()->pc());
+                Link<CPU>* call_link = this->_link_mgr.find_link(link->from(), call_block, true);
+                call_link->set_link_type(LINKTYPE_CALL_TAKEN);
                 this->_link_mgr.do_unlink(link);
             }
 
@@ -251,41 +200,19 @@ void Graph<CPU>::generate_graph() {
      *****         remove useless links and make it ready.                *****
      **************************************************************************/
     std::list<uint16_t> keys;
-    for (std::pair<uint16_t, std::list<Block*> > _ : blocks) {
+    for (std::pair<uint16_t, std::list<Block<CPU>*> > _ : this->_blocks) {
         keys.push_back(_.first);
     }
     keys.sort();
 
     for (uint16_t addr : keys) {
-        for (Block* block : blocks[addr]) {
+        for (Block<CPU>* block : this->_blocks[addr]) {
             while (true) {
-                if (!block->mergeable) {
+                if (!block->mergeable()) {
                     break;
                 }
 
-                bool is_flow_opcode = false;
-                switch (block->insts.back()->opcode) {
-                // ret
-                case 0xC0: case 0xC8: case 0xC9:
-                case 0xD0: case 0xD8: case 0xD9:
-                // call
-                case 0xC4: case 0xCC: case 0xCD:
-                case 0xD4: case 0xDC:
-                // jump
-                case 0xC2: case 0xC3: case 0xCA:
-                case 0xD2: case 0xDA:
-                case 0xE9:
-                // jr
-                case 0x18:
-                case 0x20: case 0x28:
-                case 0x30: case 0x38:
-                    is_flow_opcode = true;
-                    break;
-
-                default:
-                    break;
-                };
-                if (is_flow_opcode) {
+                if (cpu_functions<CPU>::is_flow_instruction(block->op(-1))) {
                     break;
                 }
 
@@ -296,12 +223,12 @@ void Graph<CPU>::generate_graph() {
 
                 // We now know that we have only one link, we fetch the block
                 // it goes to and check whether it accepts top merges too.
-                std::set<Link*> dests = this->_link_mgr.get_all_links_from_block(block);
+                std::set<Link<CPU>*> dests = this->_link_mgr.get_all_links_from_block(block);
                 assert(dests.size() == 1);
-                Link* link_to = *dests.begin();
-                Block* to = link_to->to;
+                Link<CPU>* link_to = *dests.begin();
+                Block<CPU>* to = link_to->to();
 
-                if (!to->mergeable) {
+                if (!to->mergeable()) {
                     break;
                 }
 
@@ -309,12 +236,12 @@ void Graph<CPU>::generate_graph() {
                     break;
                 }
 
-                blocks[to->pc].remove(to);
+                this->_blocks[to->pc()].remove(to);
 
                 block->merge(to);
 
-                for (Link* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
-                    this->_link_mgr.find_link(block, link_to_merge->to, true);
+                for (Link<CPU>* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
+                    this->_link_mgr.find_link(block, link_to_merge->to(), true);
                     this->_link_mgr.do_unlink(link_to_merge);
                 }
                 this->_link_mgr.do_unlink(link_to);
@@ -326,22 +253,22 @@ void Graph<CPU>::generate_graph() {
      ***** STEP 4: Now we decide  which functions we will need to         *****
      *****         generate.                                              *****
      **************************************************************************/
-    std::list<Block*> res_functions;
+    std::list<Block<CPU>*> res_functions;
 
-    std::list<Block*> tmp_inner_functions;
-    std::list<Block*> res_inner_functions;
+    std::list<Block<CPU>*> tmp_inner_functions;
+    std::list<Block<CPU>*> res_inner_functions;
 
-    for (Block* func : functions) {
+    for (Block<CPU>* func : functions) {
         // We have two possibilities: the beginning of the sub is not only
         // called, so we keep it for later concidering it to be within another
         // function. Else, we just cut out the current sub function from the
         // blocks.
-        std::set<Link*> links = this->_link_mgr.get_all_links_to_block(func);
+        std::set<Link<CPU>*> links = this->_link_mgr.get_all_links_to_block(func);
         if (links.size() != 0) {
             tmp_inner_functions.push_back(func);
         } else {
             res_functions.push_back(func);
-            cutfunction(this->_link_mgr, blocks, func);
+            this->_cutfunction(func);
         }
     }
 
@@ -354,10 +281,10 @@ void Graph<CPU>::generate_graph() {
     //    0218 - cp %a, $0x145
     //    021A - jr cy, $0xFA ; ($-6)
     //    021C - ret
-    for (Block* inner : tmp_inner_functions) {
-        if (inner->within.size() == 0) {
+    for (Block<CPU>* inner : tmp_inner_functions) {
+        if (inner->parents().size() == 0) {
             res_functions.push_back(inner);
-            cutfunction(this->_link_mgr, blocks, inner);
+            this->_cutfunction(inner);
         } else {
             res_inner_functions.push_back(inner);
         }
@@ -366,14 +293,14 @@ void Graph<CPU>::generate_graph() {
     std::cout << "Found " << res_functions.size() << " functions." << std::endl;
     std::cout << "Found " << res_inner_functions.size() << " inner functions." << std::endl;
 
-    for (Block* func : res_functions) {
+    for (Block<CPU>* func : res_functions) {
         std::cout << " - " << func->name() << std::endl;
     }
-    for (Block* func : res_inner_functions) {
+    for (Block<CPU>* func : res_inner_functions) {
         bool first = true;
 
         std::cout  << " - " << func->name() << " within the functions ";
-        for (std::string block_within : func->within) {
+        for (std::string block_within : func->parents()) {
             if (!first) {
                 std::cout << ", ";
             }
@@ -389,9 +316,9 @@ void Graph<CPU>::generate_graph() {
      **************************************************************************/
     // TODO
 
-    for (Block* func : res_functions) {
+    for (Block<CPU>* func : res_functions) {
         char filename[256];
-        char tmp[256];
+        // FIXME: char tmp[256];
         snprintf(filename, 256, "result/%s.dot", func->name().c_str());
 
         std::ofstream out(filename);
@@ -399,12 +326,12 @@ void Graph<CPU>::generate_graph() {
         out << "\tsplines = true;" << std::endl;
         out << "\tnode [ shape = box, fontname = \"Monospace\" ];" << std::endl << std::endl;
 
-        std::queue<Block*> blocks_to_output;
+        std::queue<Block<CPU>*> blocks_to_output;
         std::set<BlockId> done;
 
         blocks_to_output.push(func);
         while (!blocks_to_output.empty()) {
-            Block* func_block = blocks_to_output.front();
+            Block<CPU>* func_block = blocks_to_output.front();
             blocks_to_output.pop();
 
             if (done.count(func_block->id()) != 0) {
@@ -413,17 +340,19 @@ void Graph<CPU>::generate_graph() {
             done.insert(func_block->id());
 
             out << "\t" << func_block->name() << " [ label = \"";
+#if 0
             out << func_block->name() << ":\\l";
-            for (Instruction* inst : func_block->insts) {
-                snprintf(tmp, 256, "     %04X: %02X - %s\\l", inst->pc, inst->opcode, disassemble(inst));
+            for (Instruction<CPU>* inst : func_block->insts) {
+                snprintf(tmp, 256, "     %04X: %02X - %s\\l", inst->pc(), inst->opcode, disassemble(inst));
                 out << tmp;
             }
+#endif
             out << "\" ];" << std::endl;
 
-            for (Link* link : this->_link_mgr.get_all_links_from_block(func_block)) {
-                out << "\t" << link->from->name() << " -> " << link->to->name()
+            for (Link<CPU>* link : this->_link_mgr.get_all_links_from_block(func_block)) {
+                out << "\t" << link->from()->name() << " -> " << link->to()->name()
                     << " [ tailport = s, headport = n ];" << std::endl;
-                blocks_to_output.push(link->to);
+                blocks_to_output.push(link->to());
             }
             out << std::endl;
         }
@@ -434,13 +363,13 @@ void Graph<CPU>::generate_graph() {
 }
 
 template <typename CPU>
-void cutfunction(Block<CPU>* func) {
+void Graph<CPU>::_cutfunction(Block<CPU>* func) {
     std::queue<Block<CPU>*> todos;
     std::set<BlockId> done;
 
     todos.push(func);
     while (!todos.empty()) {
-        Block* todo = todos.front();
+        Block<CPU>* todo = todos.front();
         todos.pop();
 
         if (done.count(todo->id()) != 0) {
@@ -448,12 +377,14 @@ void cutfunction(Block<CPU>* func) {
         }
         done.insert(todo->id());
 
-        blocks[todo->pc].remove(todo);
+        this->_blocks[todo->pc()].remove(todo);
 
-        todo->within.push_back(func->name());
+        todo->add_parent(func->name());
 
-        for (Link* link : link_mgr.get_all_links_from_block(todo)) {
-            todos.push(link->to);
+        for (Link<CPU>* link : this->_link_mgr.get_all_links_from_block(todo)) {
+            todos.push(link->to());
         }
     }
 }
+
+#endif /*!JARBOCUL_GRAPH_GRAPH_HXX_*/

@@ -1,23 +1,25 @@
 PROJECT(jarbocul)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+# Require Boost for compilation.
+FIND_PACKAGE(Boost REQUIRED)
+
 # CXX compiler
 SET(CMAKE_CXX_COMPILER "clang++")
 
 # CXXFLAGS used by compiler.
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -std=c++1z")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -std=c++11")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DRELEASE")
-SET(CMAKE_CXX_FLAGS_DEBUG "-g3 -DDISASSEMBLER")
+SET(CMAKE_CXX_FLAGS_DEBUG "-g3 -DDEBUG")
 
 # LDFLAGS used when linking jarbocul.
 SET(JARBOCUL_LDFLAGS "")
 SET(JARBOCUL_SRCS
-    src/lib/flowtype.cc
     src/graph/block.cc
-    src/graph/graph.cc
-    src/graph/instruction.cc
-    src/graph/link.cc
+    src/lib/file_reader.cc
+    src/lib/flowtype.cc
     src/main.cc
+    src/processors/gb_z80/cpu.cc
     src/processors/gb_z80/disassembler.cc
 )
 

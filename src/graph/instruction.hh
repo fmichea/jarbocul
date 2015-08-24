@@ -1,8 +1,8 @@
 #pragma once
-#ifndef INSTRUCTION_HH_
-# define INSTRUCTION_HH_
+#ifndef JARBOCUL_GRAPH_INSTRUCTION_HH_
+# define JARBOCUL_GRAPH_INSTRUCTION_HH_
 
-# include <string>
+# include "../processors/cpu_traits.hh"
 
 template <typename CPU>
 class Instruction {
@@ -10,15 +10,15 @@ public:
     Instruction();
     virtual ~Instruction();
 
-    virtual cpu_traits<CPU>::Addr pc();
-    virtual void set_pc(cpu_traits<CPU>::Addr value);
+    virtual typename cpu_traits<CPU>::AddrType pc() const;
+    virtual void set_pc(typename cpu_traits<CPU>::AddrType value);
 
-    virtual bool operator == (const Instruction<CPU>& other) = 0;
+    virtual bool operator == (const Instruction<CPU>& other);
 
-public:
-    cpu_traits<CPU>::Addr _pc;
+protected:
+    typename cpu_traits<CPU>::AddrType _pc;
 };
 
-# include "intruction.hxx"
+# include "instruction.hxx"
 
-#endif /* !INSTRUCTION_HH_ */
+#endif /* !JARBOCUL_GRAPH_INSTRUCTION_HH_ */

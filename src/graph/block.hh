@@ -1,17 +1,21 @@
 #pragma once
-#ifndef BLOCK_HH_
-# define BLOCK_HH_
+#ifndef JARBOCUL_GRAPH_BLOCK_HH_
+# define JARBOCUL_GRAPH_BLOCK_HH_
 
 # include <iomanip>
 # include <list>
 # include <sstream>
 # include <string>
+# include <vector>
 
 # include <assert.h>
 
+# include <boost/uuid/uuid.hpp>
+# include <boost/uuid/uuid_generators.hpp>
+
 # include "instruction.hh"
 
-typedef enum blocktype_e {
+typedef enum {
     BLOCKTYPE_INT   = 0x01,
     BLOCKTYPE_LOC   = 0x02,
     BLOCKTYPE_SUB   = 0x03,
@@ -19,7 +23,7 @@ typedef enum blocktype_e {
 
 std::string blocktype2str(blocktype t);
 
-typedef uint64_t BlockId;
+typedef boost::uuids::uuid BlockId;
 
 template <typename CPU>
 class Block {
@@ -27,30 +31,38 @@ public:
     Block(Instruction<CPU>* inst);
     virtual ~Block();
 
-    virtual std::string name();
-    // virtual BlockId id();
+    virtual std::string name() const;
+    BlockId id() const;
+    blocktype block_type() const;
+    bool mergeable() const;
+    std::list<std::string> parents() const;
 
     void merge(Block<CPU>* other);
 
-    Instruction<CPU>* op();
+    Instruction<CPU>* op(int idx = 0);
 
-    cpu_traits<CPU>::Addr pc();
+    typename cpu_traits<CPU>::AddrType pc() const;
 
     void set_uniq_id(uint32_t uniq_id);
     void set_block_type(blocktype block_type);
+    void set_mergeable(bool mergeable);
+    void add_parent(std::string block);
 
 private:
-    virtual const char* _sep()  { return "_"; };
+    virtual const char* _sep() const { return "_"; };
+
+protected:
+    std::vector<Instruction<CPU>*> _insts;
 
 private:
+    BlockId _id;
+
     blocktype _block_type;
-
-    std::list<Instruction<CPU>*> _insts;
 
     bool _uniq;
     uint32_t _uniq_id;
 
-    std::list<std::string> _within;
+    std::list<std::string> _parents;
 
     bool _mergeable;
 };
@@ -58,18 +70,18 @@ private:
 template <typename CPU>
 class SpecialBlock : public Block<CPU> {
 public:
-    SpecialBlock() : Block(new Instruction<CPU>()) {
-        Instruction<CPU>* instr = this->insts.front();
+    SpecialBlock() : Block<CPU>(new Instruction<CPU>()) {
+        Instruction<CPU>* instr = this->_insts.front();
 
         instr->set_pc(0);
     }
 
-    std::string name();
+    std::string name() const;
 
 private:
-    const char* _sep()  { return "_1"; };
+    const char* _sep() const { return "_1"; };
 };
 
 # include "block.hxx"
 
-#endif /* !BLOCK_HH_ */
+#endif /* !JARBOCUL_GRAPH_BLOCK_HH_ */

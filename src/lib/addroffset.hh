@@ -1,19 +1,23 @@
-#ifndef ADDROFFSET_HH_
-# define ADDROFFSET_HH_
+#pragma once
+#ifndef JARBOCUL_LIB_ADDROFFSET_HH_
+# define JARBOCUL_LIB_ADDROFFSET_HH_
+
+# include "../processors/cpu_traits.hh"
 
 template <typename CPU>
 class AddrOffset {
 public:
-    AddrOffset(cpu_traits<CPU>::Addr addr1, cpu_traits<CPU>::Addr addr2);
+    AddrOffset(typename cpu_traits<CPU>::AddrType addr1,
+               typename cpu_traits<CPU>::AddrType addr2);
 
-    bool negative();
-    cpu_traits<CPU>::Addr offset();
+    bool negative() const;
+    typename cpu_traits<CPU>::AddrType offset() const;
 
 private:
+    typename cpu_traits<CPU>::AddrType _offset;
     bool _negative;
-    cpu_traits<CPU>::Addr _offset;
 };
 
 # include "addroffset.hxx"
 
-#endif /* !ADDROFFSET_HH_ */
+#endif /* !JARBOCUL_LIB_ADDROFFSET_HH_ */

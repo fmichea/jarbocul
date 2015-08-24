@@ -1,14 +1,29 @@
-#ifndef INSTRUCTION_HXX_
-# define INSTRUCTION_HXX_
+#ifndef JARBOCUL_GRAPH_INSTRUCTION_HXX_
+# define JARBOCUL_GRAPH_INSTRUCTION_HXX_
+
+# include "instruction.hh"
 
 template <typename CPU>
-cpu_traits<CPU>::Addr Instruction::pc() {
+Instruction<CPU>::Instruction()
+{}
+
+template <typename CPU>
+Instruction<CPU>::~Instruction()
+{}
+
+template <typename CPU>
+typename cpu_traits<CPU>::AddrType Instruction<CPU>::pc() const {
     return this->_pc;
 }
 
 template <typename CPU>
-void Instruction::set_pc(cpu_traits<CPU>::Addr pc) {
+void Instruction<CPU>::set_pc(typename cpu_traits<CPU>::AddrType pc) {
     this->_pc = pc;
 }
 
-#endif /* !INSTRUCTION_HXX_ */
+template <typename CPU>
+bool Instruction<CPU>::operator == (const Instruction<CPU>& other) {
+    return this->pc() == other.pc();
+}
+
+#endif /* !JARBOCUL_GRAPH_INSTRUCTION_HXX_ */

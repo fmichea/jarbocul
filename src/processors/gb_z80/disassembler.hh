@@ -1,8 +1,13 @@
-#ifndef DISASSEMBLER_HH_
-# define DISASSEMBLER_HH_
+#pragma once
+#ifndef JARBOCUL_PROCESSORS_GBZ80_DISASSEMBLER_HH_
+# define JARBOCUL_PROCESSORS_GBZ80_DISASSEMBLER_HH_
 
-# include "../../graph/instruction.hh"
+# include <unistd.h>
+# include <stdio.h>
+# include <stdint.h>
 
-const char* disassemble(Instruction* inst);
+# include "cpu.hh"
 
-#endif /* !DISASSEMBLER_HH_ */
+const char* disassemble(GB_Z80_Instruction* inst);
+
+#endif /* !JARBOCUL_PROCESSORS_GBZ80_DISASSEMBLER_HH_ */

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef LINK_HH_
-# define LINK_HH_
+#ifndef JARBOCUL_GRAPH_LINK_HH_
+# define JARBOCUL_GRAPH_LINK_HH_
 
 # include <iostream>
 # include <list>
@@ -24,17 +24,26 @@ template <typename CPU>
 class Link {
 public:
     Link(Block<CPU>* from, Block<CPU>* to);
-    virtual ~Link() {}
+    virtual ~Link();
 
-public:
-    Block<CPU>* from;
-    Block<CPU>* to;
+    Block<CPU>* from() const;
+    Block<CPU>* to() const;
 
-    linktype link_type;
+    linktype link_type() const;
+    void set_link_type(linktype link_type);
+
+private:
+    Block<CPU>* _from;
+    Block<CPU>* _to;
+
+    linktype _link_type;
 };
 
 template <typename CPU>
 class LinkMgr {
+public:
+    typedef std::set<Link<CPU>*> BlockToLinksIdxValue;
+
 public:
     LinkMgr();
     virtual ~LinkMgr();
@@ -50,19 +59,18 @@ public:
     BlockToLinksIdxValue get_all_links_to_block(Block<CPU>* block);
     BlockToLinksIdxValue get_all_links_from_block(Block<CPU>* block);
 
-private:
-    typedef std::set<Link<CPU>*> BlockToLinksIdxValue;
+    bool triggering_link_found(Block<CPU>* block) const;
+    void set_triggering_link_found(Block<CPU>* block);
 
 private:
     typedef std::pair<BlockId, BlockId> BlocksToLinkMapKey;
     typedef std::map<BlocksToLinkMapKey, Link<CPU>*> BlocksToLinkMap;
-
     typedef std::map<BlockId, BlockToLinksIdxValue> BlockToLinksIdx;
 
 private:
-    void _add_link_to_idx(BlockToLinksIdx& idx, Block* block, Link* link);
-    void _del_link_from_idx(BlockToLinksIdx& idx, Block* block, Link* link);
-    bool _idx_contains_one_link_for_block(BlockToLinksIdx& idx, Block* block);
+    void _add_link_to_idx(BlockToLinksIdx& idx, Block<CPU>* block, Link<CPU>* link);
+    void _del_link_from_idx(BlockToLinksIdx& idx, Block<CPU>* block, Link<CPU>* link);
+    bool _idx_contains_one_link_for_block(BlockToLinksIdx& idx, Block<CPU>* block);
 
 private:
     BlocksToLinkMap _links;
@@ -73,8 +81,14 @@ private:
     **   - _link_destinations_idx: block -> all links to blocks it goes to */
     BlockToLinksIdx _link_sources_idx;
     BlockToLinksIdx _link_destinations_idx;
+
+    /* This is used to know if we are on the first triggering link for that
+    ** block. It contains all block ids where we already found a triggering
+    ** link. */
+    std::set<BlockId> _tlf_for_block;
+
 };
 
 # include "link.hxx"
 
-#endif /* !LINK_HH_ */
+#endif /* !JARBOCUL_GRAPH_LINK_HH_ */

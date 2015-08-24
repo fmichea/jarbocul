@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_LIB_FLOWTYPE_HH_
 # define JARBOCUL_LIB_FLOWTYPE_HH_
 
-namespace jarbocul::lib::flowtype {
+namespace jarbocul { namespace lib { namespace flowtype {
     typedef enum flowtype_opcode_type_e {
         FLOWTYPE_OPCODE_NONE,
         FLOWTYPE_OPCODE_RET,
@@ -24,6 +24,6 @@ namespace jarbocul::lib::flowtype {
         flowtype_opcode_type _ft_op_type;
         bool _taken;
     };
-}
+}}}
 
 #endif /* !JARBOCUL_LIB_FLOWTYPE_HH_ */

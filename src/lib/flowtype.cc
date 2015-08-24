@@ -2,7 +2,7 @@
 
 namespace ft_np = jarbocul::lib::flowtype;
 
-namespace jarbocul::lib::flowtype {
+namespace jarbocul { namespace lib { namespace flowtype {
     FT::FT(ft_np::flowtype_opcode_type ft_op_type)
         : _ft_op_type (ft_op_type), _taken (false)
     {}
@@ -22,4 +22,4 @@ namespace jarbocul::lib::flowtype {
     void FT::set_taken(bool taken) {
         this->_taken = taken;
     }
-}
+}}}

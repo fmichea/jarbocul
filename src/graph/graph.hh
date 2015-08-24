@@ -1,6 +1,6 @@
 #pragma once
-#ifndef GRAPH_HH_
-# define GRAPH_HH_
+#ifndef JARBOCUL_GRAPH_GRAPH_HH_
+# define JARBOCUL_GRAPH_GRAPH_HH_
 
 # include <iostream>
 # include <fstream>
@@ -12,38 +12,11 @@
 # include <stack>
 # include <string>
 
-# include <fcntl.h>
-# include <string.h>
-# include <sys/mman.h>
-# include <sys/stat.h>
-# include <unistd.h>
-
+# include "../lib/file_reader.hh"
 # include "../lib/flowtype.hh"
-# include "../processors/gb_z80/disassembler.hh"
+# include "../processors/cpu_functions.hh"
 # include "block.hh"
 # include "link.hh"
-
-class FileReader {
-public:
-    FileReader(std::string filename);
-    virtual ~FileReader();
-
-    bool eof();
-
-    const char* readline();
-
-private:
-    int _fd;
-    char* _data;
-
-    char* _allocated_data;
-
-    static const size_t RW_DATA_SZ = 1024 * 16;
-    char _rw_data[RW_DATA_SZ + 1];
-
-    size_t _size;
-    size_t _offset;
-};
 
 template <typename CPU>
 class Graph {
@@ -54,14 +27,20 @@ public:
     void generate_graph();
 
 private:
+    void _cutfunction(Block<CPU>* func);
+
+private:
     FileReader _file;
 
-    LinkMgr _link_mgr;
+    LinkMgr<CPU> _link_mgr;
 
     SpecialBlock<CPU>* _begin;
     SpecialBlock<CPU>* _end;
 
-    std::map<cpu_traits<CPU>::Addr, std::list<Block<CPU>*>> _blocks;
+    std::map<typename cpu_traits<CPU>::AddrType, std::list<Block<CPU>*>> _blocks;
+    std::stack<std::pair<Block<CPU>*, typename cpu_traits<CPU>::AddrType>> _backtrace;
 };
 
-#endif /* !GRAPH_HH_ */
+# include "graph.hxx"
+
+#endif /* !JARBOCUL_GRAPH_GRAPH_HH_ */
