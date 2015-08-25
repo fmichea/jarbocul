@@ -1,5 +1,6 @@
 # include "disassembler.hh"
 
+#if 0
 static const size_t BUF_SZ = 256;
 static char buf[BUF_SZ];
 
@@ -224,3 +225,4 @@ const char* disassemble(GB_Z80_Instruction* inst) {
         return "failed to disassemble opcode";
     };
 }
+#endif

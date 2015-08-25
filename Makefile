@@ -1,17 +1,23 @@
 # Minor makefile to help build the tool.
 
-BUILD_TYPE ?= release
+BUILD_TYPE ?= UNSET
 CMAKE_BASE_OPTIONS :=
+
+# Build type is required
+ifeq ($(BUILD_TYPE),UNSET)
+$(error Build type must be set with variable BUILD_TYPE; possible values are "release" and "debug")
+endif
 
 # Depending on the build type, we want to set a number of variables.
 ifeq ($(BUILD_TYPE),release)
-BUILD_DIR ?= build
+CMAKE_BASE_OPTIONS := $(CMAKE_BASE_OPTIONS) -DCMAKE_BUILD_TYPE=Release
 else ifeq ($(BUILD_TYPE),debug)
-BUILD_DIR ?= build-dev
 CMAKE_BASE_OPTIONS := $(CMAKE_BASE_OPTIONS) -DCMAKE_BUILD_TYPE=Debug
 else
 $(error Build type "$(BUILD_TYPE)" not recognized)
 endif
+
+BUILD_DIR ?= build-$(BUILD_TYPE)
 
 # First check that we will not create a conflict with the following rules and
 # the name of the build directory. Let's just forbid that name, it's OK.
@@ -29,6 +35,10 @@ build-jarbocul: $(BUILD_DIR)
 		cmake .. $(CMAKE_BASE_OPTIONS) $(CMAKE_OPTIONS); \
 	fi
 	make -C $(BUILD_DIR)
+
+start: build-jarbocul
+	@echo "[+] Starting binary from $(PWD):"
+	./$(BUILD_DIR)/jarbocul $(BIN_ARGS)
 
 $(BUILD_DIR):
 	mkdir -p $@
