@@ -39,7 +39,8 @@ public:
 
     void merge(Block<CPU>* other);
 
-    Instruction<CPU>* op(int idx = 0);
+    Instruction<CPU>* op();
+    Instruction<CPU>* op(int idx);
 
     typename cpu_traits<CPU>::AddrType pc() const;
 
@@ -52,7 +53,7 @@ private:
     virtual const char* _sep() const { return "_"; };
 
 protected:
-    std::vector<Instruction<CPU>*> _insts;
+    std::list<Instruction<CPU>*> _insts;
 
 private:
     BlockId _id;

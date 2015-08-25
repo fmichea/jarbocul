@@ -59,7 +59,15 @@ std::list<std::string> Block<CPU>::parents() const {
 }
 
 template <typename CPU>
-Instruction<CPU>* Block<CPU>::op(int _idx) {
+inline Instruction<CPU>* Block<CPU>::op() {
+    return this->_insts.front();
+}
+
+template <typename CPU>
+inline Instruction<CPU>* Block<CPU>::op(int _idx) {
+    assert(_idx == -1);
+    return this->_insts.back();
+#if 0
     unsigned long idx;
 
     if (_idx < 0) {
@@ -68,7 +76,8 @@ Instruction<CPU>* Block<CPU>::op(int _idx) {
         idx = _idx;
     }
     assert(0 <= idx && idx < this->_insts.size());
-    return this->_insts.front();
+    return this->_insts[idx];
+#endif
 }
 
 template <typename CPU>
