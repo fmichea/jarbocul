@@ -32,7 +32,7 @@ public:
     virtual ~Block();
 
     virtual std::string name() const;
-    BlockId id() const;
+    BlockId id();
     blocktype block_type() const;
     bool mergeable() const;
     std::list<std::string> parents() const;

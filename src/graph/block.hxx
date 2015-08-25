@@ -2,10 +2,14 @@
 #ifndef JARBOCUL_GRAPH_BLOCK_HXX_
 # define JARBOCUL_GRAPH_BLOCK_HXX_
 
+# include "block.hh"
+
+static boost::uuids::random_generator uuid_gen = boost::uuids::random_generator();
+
 template <typename CPU>
 Block<CPU>::Block(Instruction<CPU>* inst)
     : _insts ()
-    , _id (boost::uuids::random_generator()())
+    , _id ()
     , _block_type (BLOCKTYPE_LOC)
     , _uniq (true)
     , _uniq_id (0)
@@ -37,7 +41,10 @@ std::string Block<CPU>::name() const {
 }
 
 template <typename CPU>
-BlockId Block<CPU>::id() const {
+BlockId Block<CPU>::id() {
+    if (this->_id.is_nil()) {
+        this->_id = uuid_gen();
+    }
     return this->_id;
 }
 
