@@ -31,6 +31,4 @@ private:
     uint8_t _data[2];
 };
 
-# include "cpu.hxx"
-
 #endif /* !JARBOCUL_PROCESSORS_GBZ80_CPU_HH_ */
