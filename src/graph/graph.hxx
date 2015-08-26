@@ -53,12 +53,10 @@ void Graph<CPU>::generate_graph() {
         ** program counter. If we do, we keep the current block and add a
         ** link. */
         current_block = nullptr;
-        if (this->_blocks.count(op->pc())) {
-            for (Block<CPU>* known : this->_blocks[op->pc()]) {
-                if (op == known->op()) {
-                    current_block = known;
-                    break;
-                }
+        for (Block<CPU>* known : this->_blocks[op->pc()]) {
+            if (*op == *known->op()) {
+                current_block = known;
+                break;
             }
         }
         if (current_block == nullptr) {

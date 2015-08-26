@@ -20,6 +20,13 @@ void GB_Z80_Instruction::set_data(uint8_t data[2]) {
     memcpy(this->_data, data, 2);
 }
 
+template <>
+bool Instruction<GB_Z80>::operator == (const Instruction<GB_Z80>& other) {
+    GB_Z80_Instruction* _this = static_cast<GB_Z80_Instruction*>(this);
+    const GB_Z80_Instruction* _other = static_cast<const GB_Z80_Instruction*>(&other);
+    return this->pc() == other.pc() && _this->opcode() == _other->opcode();
+}
+
 namespace ft_np = jarbocul::lib::flowtype;
 
 template<>

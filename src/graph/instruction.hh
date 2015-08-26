@@ -13,7 +13,7 @@ public:
     virtual typename cpu_traits<CPU>::AddrType pc() const;
     virtual void set_pc(typename cpu_traits<CPU>::AddrType value);
 
-    virtual bool operator == (const Instruction<CPU>& other);
+    bool operator == (const Instruction<CPU>& other);
 
 protected:
     typename cpu_traits<CPU>::AddrType _pc;

@@ -53,7 +53,7 @@ private:
     virtual const char* _sep() const { return "_"; };
 
 protected:
-    std::list<Instruction<CPU>*> _insts;
+    std::vector<Instruction<CPU>*> _insts;
 
 private:
     BlockId _id;
