@@ -1,2 +1,3 @@
 build-*
 *.gdef
+callgrind.*
