@@ -9,7 +9,7 @@ static boost::uuids::random_generator uuid_gen = boost::uuids::random_generator(
 template <typename CPU>
 Block<CPU>::Block(Instruction<CPU>* inst)
     : _insts ()
-    , _id ()
+    , _id (uuid_gen())
     , _block_type (BLOCKTYPE_LOC)
     , _uniq (true)
     , _uniq_id (0)
@@ -41,10 +41,7 @@ std::string Block<CPU>::name() const {
 }
 
 template <typename CPU>
-BlockId Block<CPU>::id() {
-    if (this->_id.is_nil()) {
-        this->_id = uuid_gen();
-    }
+BlockId Block<CPU>::id() const {
     return this->_id;
 }
 
