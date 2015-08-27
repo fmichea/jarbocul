@@ -38,7 +38,7 @@ build-jarbocul: $(BUILD_DIR)
 
 start: build-jarbocul
 	@echo "[+] Starting binary from $(PWD):"
-	./$(BUILD_DIR)/jarbocul $(BIN_ARGS)
+	time ./$(BUILD_DIR)/jarbocul $(BIN_ARGS)
 
 $(BUILD_DIR):
 	mkdir -p $@
