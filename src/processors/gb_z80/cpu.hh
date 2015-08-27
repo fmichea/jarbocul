@@ -2,7 +2,14 @@
 #ifndef JARBOCUL_PROCESSORS_GBZ80_CPU_HH_
 # define JARBOCUL_PROCESSORS_GBZ80_CPU_HH_
 
+# include <iomanip>
+# include <sstream>
+# include <string>
+
+# include <stdint.h>
+# include <stdio.h>
 # include <string.h>
+# include <unistd.h>
 
 # include "../../graph/instruction.hh"
 # include "../../lib/flowtype.hh"
@@ -30,5 +37,7 @@ private:
     uint8_t _opcode;
     uint8_t _data[2];
 };
+
+const char* disassemble(const GB_Z80_Instruction* inst);
 
 #endif /* !JARBOCUL_PROCESSORS_GBZ80_CPU_HH_ */

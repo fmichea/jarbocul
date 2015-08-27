@@ -1,6 +1,5 @@
-# include "disassembler.hh"
+# include "cpu.hh"
 
-#if 0
 static const size_t BUF_SZ = 256;
 static char buf[BUF_SZ];
 
@@ -10,7 +9,7 @@ static char buf[BUF_SZ];
     return buf;
 
 # define DISASS_FUNC(FuncName, ...)                                         \
-    inline const char* FuncName(GB_Z80_Instruction* inst, ## __VA_ARGS__)
+    inline const char* FuncName(const GB_Z80_Instruction* inst, ## __VA_ARGS__)
 
 inline uint16_t unpack_addr(uint8_t* data) {
     uint16_t ret = data[1];
@@ -213,7 +212,7 @@ DISASS_FUNC(single_op, const char* op) {
     DISASS_FUNC_RET("%s", op);
 }
 
-const char* disassemble(GB_Z80_Instruction* inst) {
+const char* disassemble(const GB_Z80_Instruction* inst) {
     switch (inst->opcode()) {
 #define X(Opcode, FuncName, ...)                                            \
     case Opcode:                                                            \
@@ -225,4 +224,3 @@ const char* disassemble(GB_Z80_Instruction* inst) {
         return "failed to disassemble opcode";
     };
 }
-#endif
