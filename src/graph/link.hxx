@@ -155,7 +155,7 @@ LinkMgr<CPU>::get_all_links_from_block(Block<CPU>* block) {
 
 template <typename CPU>
 bool LinkMgr<CPU>::triggering_link_found(Block<CPU>* block) const {
-    return this->_tlf_for_block.count(block->id()) == 0;
+    return this->_tlf_for_block.count(block->id()) == 1;
 }
 
 template <typename CPU>
