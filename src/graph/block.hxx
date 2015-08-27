@@ -26,14 +26,9 @@ Block<CPU>::~Block()
 template <typename CPU>
 std::string Block<CPU>::name() const {
     std::ostringstream result;
-    std::ostringstream addr;
 
-    uint16_t addr_width = sizeof (typename cpu_traits<CPU>::AddrType) * 2;
-
-    addr << std::setfill('0') << std::setw(addr_width) << std::hex
-         << std::uppercase << this->pc();
-
-    result << blocktype2str(this->_block_type) << this->_sep() << addr.str();
+    result << blocktype2str(this->_block_type) << this->_sep()
+           << addr2str<CPU>(this->pc());
     if (!this->_uniq) {
         result << "-" << this->_uniq_id;
     }
@@ -109,6 +104,14 @@ void Block<CPU>::merge(Block<CPU>* other) {
     assert(this != other);
     for (Instruction<CPU>* inst : other->_insts) {
         this->_insts.push_back(inst);
+    }
+}
+
+template <typename CPU>
+std::ostream& operator << (std::ostream& os, const Block<CPU>& block) {
+    os << block->name() << ":\n";
+    for (Instruction<CPU>* inst : block->_insts) {
+        os << "    " << inst << "\n";
     }
 }
 

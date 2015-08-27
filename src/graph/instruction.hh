@@ -2,6 +2,8 @@
 #ifndef JARBOCUL_GRAPH_INSTRUCTION_HH_
 # define JARBOCUL_GRAPH_INSTRUCTION_HH_
 
+# include <iostream>
+
 # include "../processors/cpu_traits.hh"
 
 template <typename CPU>
@@ -18,6 +20,9 @@ public:
 protected:
     typename cpu_traits<CPU>::AddrType _pc;
 };
+
+template <typename CPU>
+std::ostream& operator << (std::ostream& os, const Instruction<CPU>& inst);
 
 # include "instruction.hxx"
 

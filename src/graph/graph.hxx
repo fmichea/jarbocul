@@ -316,9 +316,9 @@ void Graph<CPU>::generate_graph() {
      **************************************************************************/
     // TODO
 
+#if 0
     for (Block<CPU>* func : res_functions) {
         char filename[256];
-        // FIXME: char tmp[256];
         snprintf(filename, 256, "result/%s.dot", func->name().c_str());
 
         std::ofstream out(filename);
@@ -340,13 +340,10 @@ void Graph<CPU>::generate_graph() {
             done.insert(func_block->id());
 
             out << "\t" << func_block->name() << " [ label = \"";
-#if 0
             out << func_block->name() << ":\\l";
-            for (Instruction<CPU>* inst : func_block->insts) {
-                snprintf(tmp, 256, "     %04X: %02X - %s\\l", inst->pc(), inst->opcode, disassemble(inst));
-                out << tmp;
+            for (Instruction<CPU>* inst : func_block->instructions()) {
+                out << "    " << inst << "\\l";
             }
-#endif
             out << "\" ];" << std::endl;
 
             for (Link<CPU>* link : this->_link_mgr.get_all_links_from_block(func_block)) {
@@ -360,6 +357,7 @@ void Graph<CPU>::generate_graph() {
         out << "}" << std::endl;
         out.close();
     }
+#endif
 }
 
 template <typename CPU>

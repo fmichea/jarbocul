@@ -3,6 +3,7 @@
 # define JARBOCUL_GRAPH_BLOCK_HH_
 
 # include <iomanip>
+# include <iostream>
 # include <list>
 # include <sstream>
 # include <string>
@@ -49,6 +50,9 @@ public:
     void set_mergeable(bool mergeable);
     void add_parent(std::string block);
 
+public:
+    friend std::ostream& operator << (std::ostream& os, const Block<CPU>& block);
+
 private:
     virtual const char* _sep() const { return "_"; };
 
@@ -67,6 +71,9 @@ private:
 
     bool _mergeable;
 };
+
+template <typename CPU>
+std::ostream& operator << (std::ostream& os, const Block<CPU>& block);
 
 template <typename CPU>
 class SpecialBlock : public Block<CPU> {

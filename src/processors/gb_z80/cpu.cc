@@ -27,6 +27,19 @@ bool Instruction<GB_Z80>::operator == (const Instruction<GB_Z80>& other) {
     return this->pc() == other.pc() && _this->opcode() == _other->opcode();
 }
 
+template <>
+std::ostream& operator<<(std::ostream& os, const Instruction<GB_Z80>& inst) {
+    const GB_Z80_Instruction* _inst = nullptr;
+    std::ostringstream opcode;
+
+    _inst = static_cast<const GB_Z80_Instruction*>(&inst);
+    opcode << std::setfill('0') << std::setw(2) << std::hex << std::uppercase
+           << static_cast<unsigned int>(_inst->opcode());
+    os << addr2str<GB_Z80>(inst.pc()) << " - " << opcode.str() << " - "
+       << disassemble(_inst);
+    return os;
+}
+
 namespace ft_np = jarbocul::lib::flowtype;
 
 template<>
