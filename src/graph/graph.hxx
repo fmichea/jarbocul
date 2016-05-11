@@ -34,7 +34,7 @@ void Graph<CPU>::generate_graph() {
      **************************************************************************/
 
     // Create special block for the beginning of the logs.
-    this->_begin = new SpecialBlock<CPU>();
+    this->_begin = new SpecialLabelBlock<CPU>("BEGIN");
     this->_begin->set_block_type(BLOCKTYPE_SUB);
 
     // Use the first block as first "last_block".
@@ -155,7 +155,7 @@ void Graph<CPU>::generate_graph() {
         last_block = current_block;
     }
 
-    this->_end = new SpecialBlock<CPU>();
+    this->_end = new SpecialLabelBlock<CPU>("END");
     this->_link_mgr.find_link(last_block, this->_end, true);
 
     /***************************************************************************
@@ -166,6 +166,7 @@ void Graph<CPU>::generate_graph() {
     std::list<Block<CPU>*> functions;
 
     functions.push_back(this->_begin);
+
     for (std::pair<uint16_t, std::list<Block<CPU>*> > _ : this->_blocks) {
         for (Block<CPU>* block : _.second) {
             // If we did interrupts correctly, we don't have any link that come
@@ -183,7 +184,11 @@ void Graph<CPU>::generate_graph() {
             for (Link<CPU>* link : this->_link_mgr.get_all_links_to_block(block)) {
                 if (link->link_type() != LINKTYPE_CALL_TAKEN)
                     continue;
-                Block<CPU>* call_block = new SpecialBlock<CPU>();
+
+                std::stringstream ss;
+                ss << "Call to " << block->name() << ".";
+
+                Block<CPU>* call_block = new SpecialLabelBlock<CPU>(ss.str());
                 call_block->set_mergeable(false);
                 call_block->op()->set_pc(block->op()->pc());
                 Link<CPU>* call_link = this->_link_mgr.find_link(link->from(), call_block, true);
@@ -253,8 +258,6 @@ void Graph<CPU>::generate_graph() {
      ***** STEP 4: Now we decide  which functions we will need to         *****
      *****         generate.                                              *****
      **************************************************************************/
-    std::list<Block<CPU>*> res_functions;
-
     std::list<Block<CPU>*> tmp_inner_functions;
     std::list<Block<CPU>*> res_inner_functions;
 
@@ -267,7 +270,7 @@ void Graph<CPU>::generate_graph() {
         if (links.size() != 0) {
             tmp_inner_functions.push_back(func);
         } else {
-            res_functions.push_back(func);
+            this->_functions.push_back(func);
             this->_cutfunction(func);
         }
     }
@@ -283,17 +286,17 @@ void Graph<CPU>::generate_graph() {
     //    021C - ret
     for (Block<CPU>* inner : tmp_inner_functions) {
         if (inner->parents().size() == 0) {
-            res_functions.push_back(inner);
+            this->_functions.push_back(inner);
             this->_cutfunction(inner);
         } else {
             res_inner_functions.push_back(inner);
         }
     }
 
-    std::cout << "Found " << res_functions.size() << " functions." << std::endl;
+    std::cout << "Found " << this->_functions.size() << " functions." << std::endl;
     std::cout << "Found " << res_inner_functions.size() << " inner functions." << std::endl;
 
-    for (Block<CPU>* func : res_functions) {
+    for (Block<CPU>* func : this->_functions) {
         std::cout << " - " << func->name() << std::endl;
     }
     for (Block<CPU>* func : res_inner_functions) {
@@ -315,49 +318,6 @@ void Graph<CPU>::generate_graph() {
      *****         map, we probably failed something.                     *****
      **************************************************************************/
     // TODO
-
-#if 0
-    for (Block<CPU>* func : res_functions) {
-        char filename[256];
-        snprintf(filename, 256, "result/%s.dot", func->name().c_str());
-
-        std::ofstream out(filename);
-        out << "digraph " << func->name() << " {" << std::endl;
-        out << "\tsplines = true;" << std::endl;
-        out << "\tnode [ shape = box, fontname = \"Monospace\" ];" << std::endl << std::endl;
-
-        std::queue<Block<CPU>*> blocks_to_output;
-        std::set<BlockId> done;
-
-        blocks_to_output.push(func);
-        while (!blocks_to_output.empty()) {
-            Block<CPU>* func_block = blocks_to_output.front();
-            blocks_to_output.pop();
-
-            if (done.count(func_block->id()) != 0) {
-                continue;
-            }
-            done.insert(func_block->id());
-
-            out << "\t" << func_block->name() << " [ label = \"";
-            out << func_block->name() << ":\\l";
-            for (Instruction<CPU>* inst : func_block->instructions()) {
-                out << "    " << inst << "\\l";
-            }
-            out << "\" ];" << std::endl;
-
-            for (Link<CPU>* link : this->_link_mgr.get_all_links_from_block(func_block)) {
-                out << "\t" << link->from()->name() << " -> " << link->to()->name()
-                    << " [ tailport = s, headport = n ];" << std::endl;
-                blocks_to_output.push(link->to());
-            }
-            out << std::endl;
-        }
-
-        out << "}" << std::endl;
-        out.close();
-    }
-#endif
 }
 
 template <typename CPU>

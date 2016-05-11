@@ -28,16 +28,15 @@ bool Instruction<GB_Z80>::operator == (const Instruction<GB_Z80>& other) {
 }
 
 template <>
-std::ostream& operator<<(std::ostream& os, const Instruction<GB_Z80>& inst) {
+void Instruction<GB_Z80>::_ostream_write(std::ostream& os) const {
     const GB_Z80_Instruction* _inst = nullptr;
     std::ostringstream opcode;
 
-    _inst = static_cast<const GB_Z80_Instruction*>(&inst);
+    _inst = static_cast<const GB_Z80_Instruction*>(this);
     opcode << std::setfill('0') << std::setw(2) << std::hex << std::uppercase
            << static_cast<unsigned int>(_inst->opcode());
-    os << addr2str<GB_Z80>(inst.pc()) << " - " << opcode.str() << " - "
+    os << addr2str<GB_Z80>(this->pc()) << ": " << opcode.str() << " - "
        << disassemble(_inst);
-    return os;
 }
 
 namespace ft_np = jarbocul::lib::flowtype;

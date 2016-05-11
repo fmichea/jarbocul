@@ -51,7 +51,8 @@ public:
     void add_parent(std::string block);
 
 public:
-    friend std::ostream& operator << (std::ostream& os, const Block<CPU>& block);
+    template <typename T>
+    friend std::ostream& operator << (std::ostream& os, const Block<T>& block);
 
 private:
     virtual const char* _sep() const { return "_"; };
@@ -76,20 +77,61 @@ template <typename CPU>
 std::ostream& operator << (std::ostream& os, const Block<CPU>& block);
 
 template <typename CPU>
-class SpecialBlock : public Block<CPU> {
+class SpecialInstruction : public Instruction<CPU> {
 public:
-    SpecialBlock() : Block<CPU>(new Instruction<CPU>()) {
-        Instruction<CPU>* instr = this->_insts.front();
+    SpecialInstruction(Block<CPU>* block, std::string label)
+        : Instruction<CPU>()
+        , _block (block)
+        , _label (label)
+    {}
 
-        instr->set_pc(0);
+    void _ostream_write(std::ostream& os) const;
+
+private:
+    Block<CPU>* _block;
+    std::string _label;
+};
+
+# define _PADDING_SIZE (sizeof (typename cpu_traits<CPU>::AddrType) * 2 + 4 + 2)
+
+template <typename CPU>
+void SpecialInstruction<CPU>::_ostream_write(std::ostream& os) const {
+    std::string padding(_PADDING_SIZE, ' ');
+
+    if (this->_block->mergeable()) {
+        os << padding;
+    }
+    os << this->_label;
+}
+
+template <typename CPU>
+class SpecialLabelBlock : public Block<CPU> {
+public:
+    SpecialLabelBlock(std::string label)
+        : Block<CPU>(nullptr)
+//        , _label (label)
+    {
+        this->_insts[0] = new SpecialInstruction<CPU>(this, label);
     }
 
     std::string name() const;
 
+//public:
+//    template <typename CPU>
+//    friend std::ostream& operator << (std::ostream& os, const SpecialBlock<CPU>& block);
+
 private:
     const char* _sep() const { return "_1"; };
+
+//private:
+//    std::string _label;
 };
 
-# include "block.hxx"
+//template <typename CPU>
+//std::ostream& operator << (std::ostream& os, const SpecialBlock<CPU>& block) {
+//    os << block._label << std::endl;
+//    return os;
+//}
 
+# include "block.hxx" 
 #endif /* !JARBOCUL_GRAPH_BLOCK_HH_ */

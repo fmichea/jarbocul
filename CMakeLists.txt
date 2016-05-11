@@ -3,6 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # Require Boost for compilation.
 FIND_PACKAGE(Boost REQUIRED)
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
 # CXX compiler
 SET(CMAKE_CXX_COMPILER "clang++")
@@ -16,8 +17,10 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g3 -DDEBUG")
 SET(JARBOCUL_LDFLAGS "")
 SET(JARBOCUL_SRCS
     src/graph/block.cc
+    src/graph/link.cc
     src/lib/file_reader.cc
     src/lib/flowtype.cc
+    src/lib/ostream_writable.cc
     src/main.cc
     src/processors/gb_z80/cpu.cc
     src/processors/gb_z80/disassembler.cc

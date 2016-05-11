@@ -2,12 +2,11 @@
 #ifndef JARBOCUL_GRAPH_INSTRUCTION_HH_
 # define JARBOCUL_GRAPH_INSTRUCTION_HH_
 
-# include <iostream>
-
+# include "../lib/ostream_writable.hh"
 # include "../processors/cpu_traits.hh"
 
 template <typename CPU>
-class Instruction {
+class Instruction : public OStreamWritable {
 public:
     Instruction();
     virtual ~Instruction();
@@ -18,11 +17,11 @@ public:
     bool operator == (const Instruction<CPU>& other);
 
 protected:
+    void _ostream_write(std::ostream& os) const;
+
+protected:
     typename cpu_traits<CPU>::AddrType _pc;
 };
-
-template <typename CPU>
-std::ostream& operator << (std::ostream& os, const Instruction<CPU>& inst);
 
 # include "instruction.hxx"
 

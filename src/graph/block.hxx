@@ -109,15 +109,27 @@ void Block<CPU>::merge(Block<CPU>* other) {
 
 template <typename CPU>
 std::ostream& operator << (std::ostream& os, const Block<CPU>& block) {
-    os << block->name() << ":\n";
-    for (Instruction<CPU>* inst : block->_insts) {
-        os << "    " << inst << "\n";
+    os << block.name() << ":\n";
+    for (Instruction<CPU>* inst : block._insts) {
+        os << "    " << *inst << "\n";
     }
+    return os;
 }
 
 template <typename CPU>
-std::string SpecialBlock<CPU>::name() const {
+std::string SpecialLabelBlock<CPU>::name() const {
     return Block<CPU>::name() + "S";
 }
+
+//template <typename CPU>
+//std::ostream& operator << (std::ostream& os, const SpecialBlock<CPU>& block) {
+//    const Block<CPU> block_ = static_cast<typename const Block<CPU>>(block);
+//
+//    std::stringstream ss;
+//    ss << block_;
+//    std::string s = ss.str();
+//
+//    return os;
+//}
 
 #endif /* !JARBOCUL_GRAPH_BLOCK_HXX_ */

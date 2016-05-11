@@ -132,7 +132,6 @@ bool LinkMgr<CPU>::_idx_contains_one_link_for_block(
 {
     typename LinkMgr<CPU>::BlockToLinksIdx::iterator it = idx.find(block->id());
 
-    //assert(it != idx.end());
     if (it == idx.end()) {
         // This can happen if an interrupt jumps on another interrupt for
         // instance.

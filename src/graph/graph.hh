@@ -24,6 +24,10 @@ public:
     Graph(std::string filename);
     virtual ~Graph();
 
+    std::list<Block<CPU>*> functions() { return this->_functions; }
+
+    LinkMgr<CPU>& link_mgr() { return this->_link_mgr; }
+
     void generate_graph();
 
 private:
@@ -34,11 +38,13 @@ private:
 
     LinkMgr<CPU> _link_mgr;
 
-    SpecialBlock<CPU>* _begin;
-    SpecialBlock<CPU>* _end;
+    SpecialLabelBlock<CPU>* _begin;
+    SpecialLabelBlock<CPU>* _end;
 
     std::map<typename cpu_traits<CPU>::AddrType, std::list<Block<CPU>*>> _blocks;
     std::stack<std::pair<Block<CPU>*, typename cpu_traits<CPU>::AddrType>> _backtrace;
+
+    std::list<Block<CPU>*> _functions;
 };
 
 # include "graph.hxx"
