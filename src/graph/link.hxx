@@ -71,6 +71,10 @@ void LinkMgr<CPU>::do_link(Link<CPU>* link) {
 
     LinkMgr<CPU>::BlocksToLinkMapKey key(link->from()->id(), link->to()->id());
 
+    if (this->_links.find(key) != this->_links.end()) {
+        return;
+    }
+
     this->_links[key] = link;
     this->_add_link_to_idx(this->_link_sources_idx, link->to(), link);
     this->_add_link_to_idx(this->_link_destinations_idx, link->from(), link);
