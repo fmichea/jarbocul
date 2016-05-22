@@ -57,12 +57,10 @@ inline Instruction<CPU>* Block<CPU>::op() {
 
 template <typename CPU>
 inline Instruction<CPU>* Block<CPU>::op(int _idx) {
-    unsigned long idx;
+    unsigned long idx = _idx;
 
     if (_idx < 0) {
         idx = this->_insts.size() + _idx;
-    } else {
-        idx = _idx;
     }
     assert(0 <= idx && idx < this->_insts.size());
     return this->_insts[idx];
