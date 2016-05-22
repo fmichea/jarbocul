@@ -12,8 +12,8 @@ static char buf[BUF_SZ];
     inline const char* FuncName(const GB_Z80_Instruction* inst, ## __VA_ARGS__)
 
 inline uint16_t unpack_addr(uint8_t* data) {
-    uint16_t ret = data[1];
-    ret |= data[2] << 8;
+    uint16_t ret = data[0];
+    ret |= data[1] << 8;
     return ret;
 }
 
