@@ -1,6 +1,7 @@
 #ifndef JARBOCUL_WRITERS_DOTWRITER_HH_
 # define JARBOCUL_WRITERS_DOTWRITER_HH_
 
+# include <algorithm>
 # include <boost/algorithm/string.hpp>
 
 # include "writer.hh"

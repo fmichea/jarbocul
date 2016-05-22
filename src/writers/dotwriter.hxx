@@ -11,6 +11,11 @@ DotWriter<CPU>::DotWriter()
 }
 
 template <typename CPU>
+bool link_sorter(const Link<CPU>* a, const Link<CPU>* b) {
+    return a->to()->pc() < b->to()->pc();
+}
+
+template <typename CPU>
 void DotWriter<CPU>::_output_function(Block<CPU>* function,
                                       LinkMgr<CPU>& link_mgr)
 {
@@ -39,7 +44,22 @@ void DotWriter<CPU>::_output_function(Block<CPU>* function,
 
         out << "\t" << func_block->name() << " [ label = \"" << label << "\" ];\n";
 
-        for (Link<CPU>* link : link_mgr.get_all_links_from_block(func_block)) {
+        std::set<Link<CPU>*> links_set = link_mgr.get_all_links_from_block(
+            func_block);
+
+        std::vector<Link<CPU>*> links(links_set.size());
+        std::copy(links_set.begin(), links_set.end(), links.begin());
+
+        typedef bool (*comparer_t)(const Link<CPU>*, const Link<CPU>*);
+        comparer_t link_sorter_loc = link_sorter;
+
+        std::sort(links.begin(), links.end(), link_sorter_loc);
+
+        for (Link<CPU>* link : links) {
+            if (link->from()->pc() == 0xFFBC) {
+                std::cout << "link:" << link << std::endl;
+            }
+
             out << "\t"
                << link->from()->name()
                << " -> "
