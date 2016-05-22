@@ -116,7 +116,7 @@ void Graph<CPU>::generate_graph() {
                 this->_backtrace.push(std::pair<Block<CPU>*, uint16_t>(last_block, 3));
             } else {
                 link->set_link_type(LINKTYPE_NOT_TAKEN);
-            };
+            }
             break;
 
         case jarbocul::lib::flowtype::FLOWTYPE_OPCODE_JUMP:
@@ -127,7 +127,7 @@ void Graph<CPU>::generate_graph() {
                 }
             } else {
                 link->set_link_type(LINKTYPE_NOT_TAKEN);
-            };
+            }
             break;
         };
 
@@ -246,7 +246,9 @@ void Graph<CPU>::generate_graph() {
                 block->merge(to);
 
                 for (Link<CPU>* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
-                    this->_link_mgr.find_link(block, link_to_merge->to(), true);
+                    Link<CPU>* link_tmp = this->_link_mgr.find_link(block, link_to_merge->to(), true);
+                    link_tmp->set_link_type(link_to_merge->link_type());
+
                     this->_link_mgr.do_unlink(link_to_merge);
                 }
                 this->_link_mgr.do_unlink(link_to);
