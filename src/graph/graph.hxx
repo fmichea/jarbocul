@@ -42,6 +42,7 @@ void Graph<CPU>::generate_graph() {
     // Create special block for the beginning of the logs.
     this->_begin = new SpecialLabelBlock<CPU>("BEGIN");
     this->_begin->set_block_type(BLOCKTYPE_SUB);
+    this->_begin->set_sep("_1");
 
     // Use the first block as first "last_block".
     last_block = this->_begin;
@@ -162,6 +163,8 @@ void Graph<CPU>::generate_graph() {
     }
 
     this->_end = new SpecialLabelBlock<CPU>("END");
+    this->_end->set_sep("_2");
+
     this->_link_mgr.find_link(last_block, this->_end, true);
 
     /***************************************************************************

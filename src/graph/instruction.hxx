@@ -28,7 +28,7 @@ bool Instruction<CPU>::operator == (const Instruction<CPU>& other) {
 
 template <typename CPU>
 void Instruction<CPU>::_ostream_write(std::ostream& os) const {
-    os << addr2str<CPU>(this->pc()) << " - [abstract instruction]";
+    os << "    " << addr2str<CPU>(this->pc()) << " - [abstract instruction]";
 }
 
 #endif /* !JARBOCUL_GRAPH_INSTRUCTION_HXX_ */

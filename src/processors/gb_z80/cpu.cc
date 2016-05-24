@@ -35,8 +35,8 @@ void Instruction<GB_Z80>::_ostream_write(std::ostream& os) const {
     _inst = static_cast<const GB_Z80_Instruction*>(this);
     opcode << std::setfill('0') << std::setw(2) << std::hex << std::uppercase
            << static_cast<unsigned int>(_inst->opcode());
-    os << addr2str<GB_Z80>(this->pc()) << ": " << opcode.str() << " - "
-       << disassemble(_inst);
+    os << "    " << addr2str<GB_Z80>(this->pc()) << ": " << opcode.str()
+       << " - " << disassemble(_inst);
 }
 
 namespace ft_np = jarbocul::lib::flowtype;

@@ -14,6 +14,7 @@
 # include <boost/uuid/uuid.hpp>
 # include <boost/uuid/uuid_generators.hpp>
 
+# include "../lib/ostream_writable.hh"
 # include "instruction.hh"
 
 typedef enum {
@@ -27,14 +28,18 @@ std::string blocktype2str(blocktype t);
 typedef boost::uuids::uuid BlockId;
 
 template <typename CPU>
-class Block {
+class Block : public OStreamWritable {
 public:
     Block(Instruction<CPU>* inst);
     virtual ~Block();
 
+    std::string uniq_name() const;
     virtual std::string name() const;
+
     BlockId id() const;
     blocktype block_type() const;
+
+    uint32_t uniq_id() const;
     bool mergeable() const;
     std::list<std::string> parents() const;
 
@@ -49,15 +54,13 @@ public:
     void set_block_type(blocktype block_type);
     void set_mergeable(bool mergeable);
     void add_parent(std::string block);
+    void set_sep(std::string sep);
 
-public:
-    template <typename T>
-    friend std::ostream& operator << (std::ostream& os, const Block<T>& block);
-
-private:
-    virtual const char* _sep() const { return "_"; };
+    void _ostream_write(std::ostream& os) const;
 
 protected:
+    std::string _sep;
+
     std::vector<Instruction<CPU>*> _insts;
 
 private:
@@ -72,9 +75,6 @@ private:
 
     bool _mergeable;
 };
-
-template <typename CPU>
-std::ostream& operator << (std::ostream& os, const Block<CPU>& block);
 
 template <typename CPU>
 class SpecialInstruction : public Instruction<CPU> {
@@ -92,46 +92,14 @@ private:
     std::string _label;
 };
 
-# define _PADDING_SIZE (sizeof (typename cpu_traits<CPU>::AddrType) * 2 + 4 + 2)
-
-template <typename CPU>
-void SpecialInstruction<CPU>::_ostream_write(std::ostream& os) const {
-    std::string padding(_PADDING_SIZE, ' ');
-
-    if (this->_block->mergeable()) {
-        os << padding;
-    }
-    os << this->_label;
-}
-
 template <typename CPU>
 class SpecialLabelBlock : public Block<CPU> {
 public:
-    SpecialLabelBlock(std::string label)
-        : Block<CPU>(nullptr)
-//        , _label (label)
-    {
-        this->_insts[0] = new SpecialInstruction<CPU>(this, label);
-    }
+    SpecialLabelBlock(std::string label);
 
+    void _ostream_write(std::ostream& os) const;
     std::string name() const;
-
-//public:
-//    template <typename CPU>
-//    friend std::ostream& operator << (std::ostream& os, const SpecialBlock<CPU>& block);
-
-private:
-    const char* _sep() const { return "_1"; };
-
-//private:
-//    std::string _label;
 };
-
-//template <typename CPU>
-//std::ostream& operator << (std::ostream& os, const SpecialBlock<CPU>& block) {
-//    os << block._label << std::endl;
-//    return os;
-//}
 
 # include "block.hxx" 
 #endif /* !JARBOCUL_GRAPH_BLOCK_HH_ */
