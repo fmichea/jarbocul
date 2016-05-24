@@ -19,6 +19,12 @@ Graph<CPU>::~Graph()
 {}
 
 template <typename CPU>
+bool link_sorter_froms(const Link<CPU>* a, const Link<CPU>* b) {
+    return a->from()->pc() < b->from()->pc();
+}
+
+
+template <typename CPU>
 void Graph<CPU>::generate_graph() {
     const char* line;
 
@@ -178,22 +184,38 @@ void Graph<CPU>::generate_graph() {
             if (block->block_type() != BLOCKTYPE_SUB)
                 continue;
 
+            std::set<Link<CPU>*> links_set = this->_link_mgr.get_all_links_to_block(block);
+
+            std::vector<Link<CPU>*> links(links_set.size());
+            std::copy(links_set.begin(), links_set.end(), links.begin());
+
+            typedef bool (*link_comparer_t)(const Link<CPU>*, const Link<CPU>*);
+            link_comparer_t link_sorter_loc = link_sorter_froms;
+
+            std::sort(links.begin(), links.end(), link_sorter_loc);
+
+            size_t idx = 0;
+
             // For each link, if it's a call link (it is marked as "taken"),
             // then we remove this link and place a little box instead, to be
             // able to split the functions' graphs in multiple files.
-            for (Link<CPU>* link : this->_link_mgr.get_all_links_to_block(block)) {
-                if (link->link_type() != LINKTYPE_CALL_TAKEN)
-                    continue;
+            for (Link<CPU>* link : links) {
+                if (link->link_type() == LINKTYPE_CALL_TAKEN) {
+                    std::stringstream ss;
+                    ss << "Call to " << block->name() << ".";
 
-                std::stringstream ss;
-                ss << "Call to " << block->name() << ".";
+                    Block<CPU>* call_block = new SpecialLabelBlock<CPU>(ss.str());
+                    call_block->set_mergeable(false);
+                    call_block->op()->set_pc(block->op()->pc());
+                    call_block->set_uniq_id(idx);
 
-                Block<CPU>* call_block = new SpecialLabelBlock<CPU>(ss.str());
-                call_block->set_mergeable(false);
-                call_block->op()->set_pc(block->op()->pc());
-                Link<CPU>* call_link = this->_link_mgr.find_link(link->from(), call_block, true);
-                call_link->set_link_type(LINKTYPE_CALL_TAKEN);
-                this->_link_mgr.do_unlink(link);
+                    Link<CPU>* call_link = this->_link_mgr.find_link(
+                            link->from(), call_block, true);
+                    call_link->set_link_type(LINKTYPE_CALL_TAKEN);
+
+                    this->_link_mgr.do_unlink(link);
+                }
+                idx += 1;
             }
 
             functions.push_back(block);
