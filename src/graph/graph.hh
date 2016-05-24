@@ -32,6 +32,7 @@ public:
 
 private:
     void _cutfunction(Block<CPU>* func);
+    void _merge_blocks(Block<CPU>* block);
 
 private:
     FileReader _file;

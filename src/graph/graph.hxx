@@ -233,48 +233,9 @@ void Graph<CPU>::generate_graph() {
     keys.sort();
 
     for (uint16_t addr : keys) {
+        this->_merge_blocks(this->_begin);
         for (Block<CPU>* block : this->_blocks[addr]) {
-            while (true) {
-                if (!block->mergeable()) {
-                    break;
-                }
-
-                if (cpu_functions<CPU>::is_flow_instruction(block->op(-1))) {
-                    break;
-                }
-
-                // If this block cannot be merged on its bottom, we ignore it.
-                if (!this->_link_mgr.accepts_merge_bottom(block)) {
-                    break;
-                }
-
-                // We now know that we have only one link, we fetch the block
-                // it goes to and check whether it accepts top merges too.
-                std::set<Link<CPU>*> dests = this->_link_mgr.get_all_links_from_block(block);
-                assert(dests.size() == 1);
-                Link<CPU>* link_to = *dests.begin();
-                Block<CPU>* to = link_to->to();
-
-                if (!to->mergeable()) {
-                    break;
-                }
-
-                if (!this->_link_mgr.accepts_merge_top(to)) {
-                    break;
-                }
-
-                this->_blocks[to->pc()].remove(to);
-
-                block->merge(to);
-
-                for (Link<CPU>* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
-                    Link<CPU>* link_tmp = this->_link_mgr.find_link(block, link_to_merge->to(), true);
-                    link_tmp->set_link_type(link_to_merge->link_type());
-
-                    this->_link_mgr.do_unlink(link_to_merge);
-                }
-                this->_link_mgr.do_unlink(link_to);
-            }
+            this->_merge_blocks(block);
         }
     }
 
@@ -366,6 +327,51 @@ void Graph<CPU>::_cutfunction(Block<CPU>* func) {
         for (Link<CPU>* link : this->_link_mgr.get_all_links_from_block(todo)) {
             todos.push(link->to());
         }
+    }
+}
+
+template <typename CPU>
+void Graph<CPU>::_merge_blocks(Block<CPU>* block) {
+    while (true) {
+        if (!block->mergeable()) {
+            break;
+        }
+
+        if (cpu_functions<CPU>::is_flow_instruction(block->op(-1))) {
+            break;
+        }
+
+        // If this block cannot be merged on its bottom, we ignore it.
+        if (!this->_link_mgr.accepts_merge_bottom(block)) {
+            break;
+        }
+
+        // We now know that we have only one link, we fetch the block
+        // it goes to and check whether it accepts top merges too.
+        std::set<Link<CPU>*> dests = this->_link_mgr.get_all_links_from_block(block);
+        assert(dests.size() == 1);
+        Link<CPU>* link_to = *dests.begin();
+        Block<CPU>* to = link_to->to();
+
+        if (!to->mergeable()) {
+            break;
+        }
+
+        if (!this->_link_mgr.accepts_merge_top(to)) {
+            break;
+        }
+
+        this->_blocks[to->pc()].remove(to);
+
+        block->merge(to);
+
+        for (Link<CPU>* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
+            Link<CPU>* link_tmp = this->_link_mgr.find_link(block, link_to_merge->to(), true);
+            link_tmp->set_link_type(link_to_merge->link_type());
+
+            this->_link_mgr.do_unlink(link_to_merge);
+        }
+        this->_link_mgr.do_unlink(link_to);
     }
 }
 
