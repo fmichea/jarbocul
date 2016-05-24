@@ -102,7 +102,7 @@ ft_np::FT cpu_functions<GB_Z80>::flowtype(Block<GB_Z80>* last_block, AddrOffset<
     };
 
     ft_np::FT ret(opcode_type);
-    ret.set_taken(offset.offset() != opcode_size);
+    ret.set_taken(offset.negative() || offset.offset() != opcode_size);
     return ret;
 }
 
