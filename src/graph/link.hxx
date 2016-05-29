@@ -1,3 +1,4 @@
+#pragma once
 #ifndef JARBOCUL_GRAPH_LINK_HXX_
 # define JARBOCUL_GRAPH_LINK_HXX_
 

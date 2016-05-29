@@ -1,3 +1,4 @@
+#pragma once
 #ifndef CPU_TRAITS_HXX_
 # define CPU_TRAITS_HXX_
 

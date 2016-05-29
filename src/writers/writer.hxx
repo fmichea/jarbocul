@@ -1,3 +1,4 @@
+#pragma once
 #ifndef JARBOCUL_WRITERS_WRITER_HXX_
 # define JARBOCUL_WRITERS_WRITER_HXX_
 
