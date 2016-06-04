@@ -9,7 +9,6 @@
 # include <map>
 # include <queue>
 # include <set>
-# include <stack>
 # include <string>
 
 # include "../lib/file_reader.hh"
@@ -18,6 +17,7 @@
 # include "../processors/cpu_functions.hh"
 # include "block.hh"
 # include "link.hh"
+# include "backtrace.hh"
 
 template <typename CPU>
 class Graph {
@@ -44,7 +44,8 @@ private:
     SpecialLabelBlock<CPU>* _end;
 
     std::map<typename cpu_traits<CPU>::AddrType, std::list<Block<CPU>*>> _blocks;
-    std::stack<std::pair<Block<CPU>*, typename cpu_traits<CPU>::AddrType>> _backtrace;
+
+    Backtrace<CPU> _backtrace;
 
     std::list<Block<CPU>*> _functions;
 };

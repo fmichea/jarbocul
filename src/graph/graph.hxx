@@ -95,11 +95,13 @@ void Graph<CPU>::generate_graph() {
             /* We have a ret, and it triggered. In that case, we will try to
             ** use our backtrace to go where we were called. */
             if (!this->_backtrace.empty()) {
-                Block<CPU>* back = this->_backtrace.top().first;
-                uint16_t size = this->_backtrace.top().second;
-                if (size == 0 || current_block->pc() == back->pc() + size ||
-                    cpu_functions<CPU>::is_interrupt(op)) {
-                    last_block = back;
+                BacktraceItem<CPU>* bt_item = this->_backtrace.top();
+                if (
+                    bt_item->size() == 0 ||
+                    current_block->pc() == bt_item->last_block()->pc() + bt_item->size() ||
+                    cpu_functions<CPU>::is_interrupt(op)
+                ) {
+                    last_block = bt_item->last_block();
                     //delete link;
                     link = this->_link_mgr.find_link(last_block, current_block);
                     this->_backtrace.pop();
@@ -119,7 +121,7 @@ void Graph<CPU>::generate_graph() {
                     link->set_link_type(LINKTYPE_CALL_TAKEN);
                     this->_link_mgr.set_triggering_link_found(last_block);
                 }
-                this->_backtrace.push(std::pair<Block<CPU>*, uint16_t>(last_block, 3));
+                this->_backtrace.push(last_block, 3);
             } else {
                 link->set_link_type(LINKTYPE_NOT_TAKEN);
             }
@@ -140,13 +142,11 @@ void Graph<CPU>::generate_graph() {
         if (cpu_functions<CPU>::is_interrupt(op)) {
             // Block type is an interrupt.
             current_block->set_block_type(BLOCKTYPE_INT);
-            // Backtrace must be updated while we are in the interrupt. If the
-            // block is an opcode that calls an interrupt, then we set the size
-            // to the size of that opcode instead of 0.
-            this->_backtrace.push(std::pair<Block<CPU>*, uint16_t>(
-                last_block,
-                cpu_functions<CPU>::interrupt_call_opcode_size(last_block->op())
-            ));
+            // If the block is an opcode that calls an interrupt, then we set
+            // the size to the size of that opcode instead of 0.
+            size_t size = cpu_functions<CPU>::interrupt_call_opcode_size(last_block->op());
+            // Backtrace must be updated while we are in the interrupt.
+            this->_backtrace.push(last_block, size);
             // We can get rid of the link now.
             delete link;
             link = nullptr;
