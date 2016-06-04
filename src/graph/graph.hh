@@ -14,6 +14,7 @@
 
 # include "../lib/file_reader.hh"
 # include "../lib/flowtype.hh"
+# include "../lib/set_sorter.hh"
 # include "../processors/cpu_functions.hh"
 # include "block.hh"
 # include "link.hh"

@@ -19,10 +19,9 @@ Graph<CPU>::~Graph()
 {}
 
 template <typename CPU>
-bool link_sorter_froms(const Link<CPU>* a, const Link<CPU>* b) {
+bool link_sorter_froms(Link<CPU>* a, Link<CPU>* b) {
     return a->from()->pc() < b->from()->pc();
 }
-
 
 template <typename CPU>
 void Graph<CPU>::generate_graph() {
@@ -187,15 +186,10 @@ void Graph<CPU>::generate_graph() {
             if (block->block_type() != BLOCKTYPE_SUB)
                 continue;
 
-            std::set<Link<CPU>*> links_set = this->_link_mgr.get_all_links_to_block(block);
-
-            std::vector<Link<CPU>*> links(links_set.size());
-            std::copy(links_set.begin(), links_set.end(), links.begin());
-
-            typedef bool (*link_comparer_t)(const Link<CPU>*, const Link<CPU>*);
-            link_comparer_t link_sorter_loc = link_sorter_froms;
-
-            std::sort(links.begin(), links.end(), link_sorter_loc);
+            std::vector<Link<CPU>*> links = set_sorter(
+                this->_link_mgr.get_all_links_to_block(block),
+                link_sorter_froms<CPU>
+            );
 
             size_t idx = 0;
 

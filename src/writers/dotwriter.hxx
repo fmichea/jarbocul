@@ -12,7 +12,7 @@ DotWriter<CPU>::DotWriter()
 }
 
 template <typename CPU>
-bool link_sorter_tos(const Link<CPU>* a, const Link<CPU>* b) {
+bool link_sorter_tos(Link<CPU>* a, Link<CPU>* b) {
     if (a->to()->pc() == b->to()->pc()) {
         return a->to()->uniq_id() < b->to()->uniq_id();
     }
@@ -20,7 +20,7 @@ bool link_sorter_tos(const Link<CPU>* a, const Link<CPU>* b) {
 }
 
 template <typename CPU>
-bool block_sorter(const Block<CPU>* a, const Block<CPU>* b) {
+bool block_sorter(Block<CPU>* a, Block<CPU>* b) {
     if (a->pc() == b->pc()) {
         return a->uniq_id() < b->uniq_id();
     }
@@ -52,13 +52,10 @@ void DotWriter<CPU>::_output_function(Block<CPU>* function,
         }
     }
 
-    std::vector<BlockPtr> all_function_blocks(all_function_blocks_set.size());
-    std::copy(all_function_blocks_set.begin(), all_function_blocks_set.end(), all_function_blocks.begin());
-
-    typedef bool (*block_comparer_t)(const Block<CPU>*, const Block<CPU>*);
-    block_comparer_t block_sorter_loc = block_sorter;
-
-    std::sort(all_function_blocks.begin(), all_function_blocks.end(), block_sorter_loc);
+    std::vector<BlockPtr> all_function_blocks = set_sorter(
+        all_function_blocks_set,
+        block_sorter<CPU>
+    );
 
     std::ofstream out(this->_output_filename(function->name()));
 
@@ -73,16 +70,10 @@ void DotWriter<CPU>::_output_function(Block<CPU>* function,
 
         out << "\t" << func_block->uniq_name() << " [ label = \"" << label << "\" ];\n";
 
-        std::set<LinkPtr> links_set = link_mgr.get_all_links_from_block(
-            func_block);
-
-        std::vector<LinkPtr> links(links_set.size());
-        std::copy(links_set.begin(), links_set.end(), links.begin());
-
-        typedef bool (*link_comparer_t)(const Link<CPU>*, const Link<CPU>*);
-        link_comparer_t link_sorter_loc = link_sorter_tos;
-
-        std::sort(links.begin(), links.end(), link_sorter_loc);
+        std::vector<LinkPtr> links = set_sorter(
+            link_mgr.get_all_links_from_block(func_block),
+            link_sorter_tos<CPU>
+        );
 
         for (LinkPtr link : links) {
             out << "\t"
