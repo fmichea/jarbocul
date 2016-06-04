@@ -138,16 +138,15 @@ void Graph<CPU>::generate_graph() {
         };
 
         if (cpu_functions<CPU>::is_interrupt(op)) {
-            uint16_t size = 0;
             // Block type is an interrupt.
             current_block->set_block_type(BLOCKTYPE_INT);
-            // If the block is an opcode that calls an interrupt, then we set
-            // the size to the size of that opcode instead of 0.
-            if (cpu_functions<CPU>::is_interrupt_call(last_block->op())) {
-                size = 1; // FIXME
-            }
-            // Backtrace must be updated while we are in the interrupt.
-            this->_backtrace.push(std::pair<Block<CPU>*, uint16_t>(last_block, size));
+            // Backtrace must be updated while we are in the interrupt. If the
+            // block is an opcode that calls an interrupt, then we set the size
+            // to the size of that opcode instead of 0.
+            this->_backtrace.push(std::pair<Block<CPU>*, uint16_t>(
+                last_block,
+                cpu_functions<CPU>::interrupt_call_opcode_size(last_block->op())
+            ));
             // We can get rid of the link now.
             delete link;
             link = nullptr;

@@ -116,15 +116,15 @@ bool cpu_functions<GB_Z80>::is_interrupt(Instruction<GB_Z80>* op) {
 }
 
 template <>
-bool cpu_functions<GB_Z80>::is_interrupt_call(Instruction<GB_Z80>* _inst) {
+size_t cpu_functions<GB_Z80>::interrupt_call_opcode_size(Instruction<GB_Z80>* _inst) {
     GB_Z80_Instruction* inst = static_cast<GB_Z80_Instruction*>(_inst);
 
     for (uint16_t tmp = 0xC7; tmp < 0x100; tmp += 0x8) {
         if (tmp == inst->opcode()) {
-            return true;
+            return 1;
         }
     }
-    return false;
+    return 0;
 }
 
 template <>

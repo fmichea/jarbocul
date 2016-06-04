@@ -17,7 +17,7 @@ struct cpu_functions {
 
     static bool is_interrupt(Instruction<CPU>* inst);
 
-    static bool is_interrupt_call(Instruction<CPU>* inst);
+    static size_t interrupt_call_opcode_size(Instruction<CPU>* inst);
 
     static jarbocul::lib::flowtype::FT flowtype(Block<CPU>* last_block, AddrOffset<CPU>& offset);
 };
