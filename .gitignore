@@ -1,4 +1,4 @@
 build-*
 *.gdef
 callgrind.*
-result
+result*
