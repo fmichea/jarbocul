@@ -25,15 +25,21 @@ public:
     Graph(std::string filename);
     virtual ~Graph();
 
-    std::list<Block<CPU>*> functions() { return this->_functions; }
-
-    LinkMgr<CPU>& link_mgr() { return this->_link_mgr; }
+    std::list<Block<CPU>*> functions();
+    LinkMgr<CPU>& link_mgr();
 
     void generate_graph();
 
 private:
-    void _cutfunction(Block<CPU>* func);
-    void _merge_blocks(Block<CPU>* block);
+    typedef typename cpu_traits<CPU>::AddrType AddrType;
+
+    typedef Block<CPU> BlockType;
+    typedef Link<CPU> LinkType;
+    typedef Instruction<CPU> InstructionType;
+
+private:
+    void _cutfunction(BlockType* func);
+    void _merge_blocks(BlockType* block);
 
 private:
     FileReader _file;
@@ -43,11 +49,11 @@ private:
     SpecialLabelBlock<CPU>* _begin;
     SpecialLabelBlock<CPU>* _end;
 
-    std::map<typename cpu_traits<CPU>::AddrType, std::list<Block<CPU>*>> _blocks;
+    std::map<AddrType, std::list<BlockType*>> _blocks;
 
     Backtrace<CPU> _backtrace;
 
-    std::list<Block<CPU>*> _functions;
+    std::list<BlockType*> _functions;
 };
 
 # include "graph.hxx"

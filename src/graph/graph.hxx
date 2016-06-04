@@ -24,15 +24,25 @@ bool link_sorter_froms(Link<CPU>* a, Link<CPU>* b) {
 }
 
 template <typename CPU>
+std::list<Block<CPU>*> Graph<CPU>::functions() {
+    return this->_functions;
+}
+
+template <typename CPU>
+LinkMgr<CPU>& Graph<CPU>::link_mgr() {
+    return this->_link_mgr;
+}
+
+template <typename CPU>
 void Graph<CPU>::generate_graph() {
     const char* line;
 
-    Block<CPU>* last_block;
-    Block<CPU>* current_block;
+    BlockType* last_block;
+    BlockType* current_block;
 
-    Link<CPU>* link;
+    LinkType* link;
 
-    Instruction<CPU>* op;
+    InstructionType* op;
 
     /**************************************************************************
      ***** STEP 1: Fetch the graph from the log file.                     *****
@@ -59,14 +69,14 @@ void Graph<CPU>::generate_graph() {
         ** program counter. If we do, we keep the current block and add a
         ** link. */
         current_block = nullptr;
-        for (Block<CPU>* known : this->_blocks[op->pc()]) {
+        for (BlockType* known : this->_blocks[op->pc()]) {
             if (*op == *known->op()) {
                 current_block = known;
                 break;
             }
         }
         if (current_block == nullptr) {
-            current_block = new Block<CPU>(op);
+            current_block = new BlockType(op);
             if (0 < this->_blocks[op->pc()].size()) {
                 /* No loop needed, if we set the first one and each one
                 ** starting from the second, we will set them all. */
@@ -170,12 +180,12 @@ void Graph<CPU>::generate_graph() {
      *****         unmergeable, that will only contain the name of the     *****
      *****         functions.                                              *****
      **************************************************************************/
-    std::list<Block<CPU>*> functions;
+    std::list<BlockType*> functions;
 
     functions.push_back(this->_begin);
 
-    for (std::pair<uint16_t, std::list<Block<CPU>*> > _ : this->_blocks) {
-        for (Block<CPU>* block : _.second) {
+    for (std::pair<AddrType, std::list<BlockType*> > _ : this->_blocks) {
+        for (BlockType* block : _.second) {
             // If we did interrupts correctly, we don't have any link that come
             // to it, we just need to put it in the function list.
             if (block->block_type() == BLOCKTYPE_INT)
@@ -185,7 +195,7 @@ void Graph<CPU>::generate_graph() {
             if (block->block_type() != BLOCKTYPE_SUB)
                 continue;
 
-            std::vector<Link<CPU>*> links = set_sorter(
+            std::vector<LinkType*> links = set_sorter(
                 this->_link_mgr.get_all_links_to_block(block),
                 link_sorter_froms<CPU>
             );
@@ -195,17 +205,17 @@ void Graph<CPU>::generate_graph() {
             // For each link, if it's a call link (it is marked as "taken"),
             // then we remove this link and place a little box instead, to be
             // able to split the functions' graphs in multiple files.
-            for (Link<CPU>* link : links) {
+            for (LinkType* link : links) {
                 if (link->link_type() == LINKTYPE_CALL_TAKEN) {
                     std::stringstream ss;
                     ss << "Call to " << block->name() << ".";
 
-                    Block<CPU>* call_block = new SpecialLabelBlock<CPU>(ss.str());
+                    BlockType* call_block = new SpecialLabelBlock<CPU>(ss.str());
                     call_block->set_mergeable(false);
                     call_block->op()->set_pc(block->op()->pc());
                     call_block->set_uniq_id(idx);
 
-                    Link<CPU>* call_link = this->_link_mgr.find_link(
+                    LinkType* call_link = this->_link_mgr.find_link(
                             link->from(), call_block, true);
                     call_link->set_link_type(LINKTYPE_CALL_TAKEN);
 
@@ -223,14 +233,14 @@ void Graph<CPU>::generate_graph() {
      *****         remove useless links and make it ready.                *****
      **************************************************************************/
     std::list<uint16_t> keys;
-    for (std::pair<uint16_t, std::list<Block<CPU>*> > _ : this->_blocks) {
+    for (std::pair<uint16_t, std::list<BlockType*> > _ : this->_blocks) {
         keys.push_back(_.first);
     }
     keys.sort();
 
     for (uint16_t addr : keys) {
         this->_merge_blocks(this->_begin);
-        for (Block<CPU>* block : this->_blocks[addr]) {
+        for (BlockType* block : this->_blocks[addr]) {
             this->_merge_blocks(block);
         }
     }
@@ -239,15 +249,15 @@ void Graph<CPU>::generate_graph() {
      ***** STEP 4: Now we decide  which functions we will need to         *****
      *****         generate.                                              *****
      **************************************************************************/
-    std::list<Block<CPU>*> tmp_inner_functions;
-    std::list<Block<CPU>*> res_inner_functions;
+    std::list<BlockType*> tmp_inner_functions;
+    std::list<BlockType*> res_inner_functions;
 
-    for (Block<CPU>* func : functions) {
+    for (BlockType* func : functions) {
         // We have two possibilities: the beginning of the sub is not only
         // called, so we keep it for later concidering it to be within another
         // function. Else, we just cut out the current sub function from the
         // blocks.
-        std::set<Link<CPU>*> links = this->_link_mgr.get_all_links_to_block(func);
+        std::set<LinkType*> links = this->_link_mgr.get_all_links_to_block(func);
         if (links.size() != 0) {
             tmp_inner_functions.push_back(func);
         } else {
@@ -265,7 +275,7 @@ void Graph<CPU>::generate_graph() {
     //    0218 - cp %a, $0x145
     //    021A - jr cy, $0xFA ; ($-6)
     //    021C - ret
-    for (Block<CPU>* inner : tmp_inner_functions) {
+    for (BlockType* inner : tmp_inner_functions) {
         if (inner->parents().size() == 0) {
             this->_functions.push_back(inner);
             this->_cutfunction(inner);
@@ -277,10 +287,10 @@ void Graph<CPU>::generate_graph() {
     std::cout << "Found " << this->_functions.size() << " functions." << std::endl;
     std::cout << "Found " << res_inner_functions.size() << " inner functions." << std::endl;
 
-    for (Block<CPU>* func : this->_functions) {
+    for (BlockType* func : this->_functions) {
         std::cout << " - " << func->name() << std::endl;
     }
-    for (Block<CPU>* func : res_inner_functions) {
+    for (BlockType* func : res_inner_functions) {
         bool first = true;
 
         std::cout  << " - " << func->name() << " within the functions ";
@@ -302,13 +312,13 @@ void Graph<CPU>::generate_graph() {
 }
 
 template <typename CPU>
-void Graph<CPU>::_cutfunction(Block<CPU>* func) {
-    std::queue<Block<CPU>*> todos;
+void Graph<CPU>::_cutfunction(BlockType* func) {
+    std::queue<BlockType*> todos;
     std::set<BlockId> done;
 
     todos.push(func);
     while (!todos.empty()) {
-        Block<CPU>* todo = todos.front();
+        BlockType* todo = todos.front();
         todos.pop();
 
         if (done.count(todo->id()) != 0) {
@@ -320,14 +330,14 @@ void Graph<CPU>::_cutfunction(Block<CPU>* func) {
 
         todo->add_parent(func->name());
 
-        for (Link<CPU>* link : this->_link_mgr.get_all_links_from_block(todo)) {
+        for (LinkType* link : this->_link_mgr.get_all_links_from_block(todo)) {
             todos.push(link->to());
         }
     }
 }
 
 template <typename CPU>
-void Graph<CPU>::_merge_blocks(Block<CPU>* block) {
+void Graph<CPU>::_merge_blocks(BlockType* block) {
     while (true) {
         if (!block->mergeable()) {
             break;
@@ -344,10 +354,10 @@ void Graph<CPU>::_merge_blocks(Block<CPU>* block) {
 
         // We now know that we have only one link, we fetch the block
         // it goes to and check whether it accepts top merges too.
-        std::set<Link<CPU>*> dests = this->_link_mgr.get_all_links_from_block(block);
+        std::set<LinkType*> dests = this->_link_mgr.get_all_links_from_block(block);
         assert(dests.size() == 1);
-        Link<CPU>* link_to = *dests.begin();
-        Block<CPU>* to = link_to->to();
+        LinkType* link_to = *dests.begin();
+        BlockType* to = link_to->to();
 
         if (!to->mergeable()) {
             break;
@@ -361,8 +371,8 @@ void Graph<CPU>::_merge_blocks(Block<CPU>* block) {
 
         block->merge(to);
 
-        for (Link<CPU>* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
-            Link<CPU>* link_tmp = this->_link_mgr.find_link(block, link_to_merge->to(), true);
+        for (LinkType* link_to_merge : this->_link_mgr.get_all_links_from_block(to)) {
+            LinkType* link_tmp = this->_link_mgr.find_link(block, link_to_merge->to(), true);
             link_tmp->set_link_type(link_to_merge->link_type());
 
             this->_link_mgr.do_unlink(link_to_merge);
