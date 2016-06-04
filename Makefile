@@ -25,7 +25,7 @@ ifeq ($(BUILD_DIR),build-jarbocul)
 $(error Build directory cannot be named "build-jarbocul" per convention)
 endif
 
-.PHONY: all build-jarbocul
+.PHONY: all show-bin build-jarbocul clean
 
 all: build-jarbocul
 
@@ -39,6 +39,13 @@ build-jarbocul: $(BUILD_DIR)
 start: build-jarbocul
 	@echo "[+] Starting binary from $(PWD):"
 	time ./$(BUILD_DIR)/jarbocul $(BIN_ARGS)
+
+show-bin:
+	@make BUILD_TYPE=$(BUILD_TYPE) 1>&2
+	@echo ./$(BUILD_DIR)/jarbocul
+
+clean:
+	test -d "$(BUILD_DIR)" && rm -r ./$(BUILD_DIR) || true
 
 $(BUILD_DIR):
 	mkdir -p $@
