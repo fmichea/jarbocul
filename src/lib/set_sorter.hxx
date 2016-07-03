@@ -1,7 +1,7 @@
 #ifndef JARBOCUL_LIB_SET_SORTER_HXX_
 # define JARBOCUL_LIB_SET_SORTER_HXX_
 
-# include "set_sorter.hh"
+# include "lib/set_sorter.hh"
 
 template <typename T>
 std::vector<T> set_sorter(std::set<T> in, bool (*cmp_func)(T a, T b)) {

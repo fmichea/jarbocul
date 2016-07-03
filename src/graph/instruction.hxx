@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_GRAPH_INSTRUCTION_HXX_
 # define JARBOCUL_GRAPH_INSTRUCTION_HXX_
 
-# include "instruction.hh"
+# include "graph/instruction.hh"
 
 template <typename CPU>
 Instruction<CPU>::Instruction()

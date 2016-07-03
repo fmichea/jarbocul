@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_WRITERS_DOTWRITER_HXX_
 # define JARBOCUL_WRITERS_DOTWRITER_HXX_
 
-# include "dotwriter.hh"
+# include "writers/dotwriter.hh"
 
 template <typename CPU>
 DotWriter<CPU>::DotWriter()

@@ -7,7 +7,7 @@
 # include <sstream>
 # include <string>
 
-# include "../graph/graph.hh"
+# include "graph/graph.hh"
 
 template <typename CPU>
 class Writer {
@@ -30,6 +30,6 @@ protected:
     std::string _output_dir;
 };
 
-# include "writer.hxx"
+# include "writers/writer.hxx"
 
 #endif /* !JARBOCUL_WRITERS_WRITER_HH_ */

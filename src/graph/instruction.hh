@@ -2,8 +2,8 @@
 #ifndef JARBOCUL_GRAPH_INSTRUCTION_HH_
 # define JARBOCUL_GRAPH_INSTRUCTION_HH_
 
-# include "../lib/ostream_writable.hh"
-# include "../processors/cpu_traits.hh"
+# include "lib/ostream_writable.hh"
+# include "processors/cpu_traits.hh"
 
 template <typename CPU>
 class Instruction : public OStreamWritable {
@@ -23,6 +23,6 @@ protected:
     typename cpu_traits<CPU>::AddrType _pc;
 };
 
-# include "instruction.hxx"
+# include "graph/instruction.hxx"
 
 #endif /* !JARBOCUL_GRAPH_INSTRUCTION_HH_ */

@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_GRAPH_GRAPH_HXX_
 # define JARBOCUL_GRAPH_GRAPH_HXX_
 
-# include "graph.hh"
+# include "graph/graph.hh"
 
 template <typename CPU>
 Graph<CPU>::Graph(std::string filename)

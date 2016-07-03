@@ -1,4 +1,4 @@
-#include "file_reader.hh"
+#include "lib/file_reader.hh"
 
 FileReader::FileReader(std::string filename)
     : _allocated_data (nullptr)

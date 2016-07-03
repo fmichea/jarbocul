@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_GRAPH_BACKTRACE_HXX_
 # define JARBOCUL_GRAPH_BACKTRACE_HXX_
 
-# include "backtrace.hh"
+# include "graph/backtrace.hh"
 
 template <typename CPU>
 BacktraceItem<CPU>::BacktraceItem(Block<CPU>* last_block, size_t size)

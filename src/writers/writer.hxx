@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_WRITERS_WRITER_HXX_
 # define JARBOCUL_WRITERS_WRITER_HXX_
 
-# include "writer.hh"
+# include "writers/writer.hh"
 
 template <typename CPU>
 Writer<CPU>::Writer()

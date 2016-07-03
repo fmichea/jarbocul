@@ -3,7 +3,6 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 # Require Boost for compilation.
 FIND_PACKAGE(Boost REQUIRED)
-INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
 # CXX compiler
 SET(CMAKE_CXX_COMPILER "clang++")
@@ -15,6 +14,10 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g3 -DDEBUG")
 
 # LDFLAGS used when linking jarbocul.
 SET(JARBOCUL_LDFLAGS "")
+
+# All the include directories for the project.
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # These sources are common to the test suite and the main binary (all files but
 # the file defining the main function).

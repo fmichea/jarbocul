@@ -1,4 +1,4 @@
-# include "cpu.hh"
+# include "processors/gb_z80/cpu.hh"
 
 static const size_t BUF_SZ = 256;
 static char buf[BUF_SZ];

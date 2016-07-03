@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_LIB_ADDROFFSET_HH_
 # define JARBOCUL_LIB_ADDROFFSET_HH_
 
-# include "../processors/cpu_traits.hh"
+# include "processors/cpu_traits.hh"
 
 template <typename CPU>
 class AddrOffset {
@@ -18,6 +18,6 @@ private:
     bool _negative;
 };
 
-# include "addroffset.hxx"
+# include "lib/addroffset.hxx"
 
 #endif /* !JARBOCUL_LIB_ADDROFFSET_HH_ */

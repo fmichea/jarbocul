@@ -1,4 +1,4 @@
-# include "link.hh"
+# include "graph/link.hh"
 
 std::string linktype2str(linktype t) {
     switch (t) {

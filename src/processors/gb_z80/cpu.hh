@@ -11,10 +11,10 @@
 # include <string.h>
 # include <unistd.h>
 
-# include "../../graph/instruction.hh"
-# include "../../lib/flowtype.hh"
-# include "../cpu_traits.hh"
-# include "../cpu_functions.hh"
+# include "graph/instruction.hh"
+# include "lib/flowtype.hh"
+# include "processors/cpu_functions.hh"
+# include "processors/cpu_traits.hh"
 
 class GB_Z80;
 

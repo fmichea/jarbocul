@@ -1,4 +1,4 @@
-#include "flowtype.hh"
+#include "lib/flowtype.hh"
 
 namespace ft_np = jarbocul::lib::flowtype;
 

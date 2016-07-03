@@ -8,7 +8,7 @@
 # include <set>
 # include <string>
 
-# include "block.hh"
+# include "graph/block.hh"
 
 typedef enum linktype_e {
     LINKTYPE_NORMAL         = 0x0,
@@ -89,6 +89,6 @@ private:
 
 };
 
-# include "link.hxx"
+# include "graph/link.hxx"
 
 #endif /* !JARBOCUL_GRAPH_LINK_HH_ */

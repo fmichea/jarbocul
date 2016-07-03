@@ -3,7 +3,8 @@
 # define JARBOCUL_GRAPH_BACKTRACE_HH_
 
 # include <stack>
-# include "block.hh"
+
+# include "graph/block.hh"
 
 template <typename CPU>
 class BacktraceItem {
@@ -33,6 +34,6 @@ private:
     std::stack<BacktraceItem<CPU>*> _items;
 };
 
-# include "backtrace.hxx"
+# include "graph/backtrace.hxx"
 
 #endif /* !JARBOCUL_GRAPH_BACKTRACE_HH_ */

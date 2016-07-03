@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_GRAPH_LINK_HXX_
 # define JARBOCUL_GRAPH_LINK_HXX_
 
-#include "link.hh"
+#include "graph/link.hh"
 
 template <typename CPU>
 Link<CPU>::Link(Block<CPU>* from, Block<CPU>* to)

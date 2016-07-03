@@ -1,4 +1,4 @@
-#include "block.hh"
+#include "graph/block.hh"
 
 std::string blocktype2str(blocktype t) {
     switch (t) {

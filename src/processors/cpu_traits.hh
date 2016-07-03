@@ -12,6 +12,6 @@ struct cpu_traits {};
 template <typename CPU>
 std::string addr2str(typename cpu_traits<CPU>::AddrType pc);
 
-# include "cpu_traits.hxx"
+# include "processors/cpu_traits.hxx"
 
 #endif /* !JARBOCUL_PROCESSORS_CPU_TRAITS_HH_ */

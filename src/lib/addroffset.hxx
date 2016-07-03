@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_LIB_ADDROFFSET_HXX_
 # define JARBOCUL_LIB_ADDROFFSET_HXX_
 
-# include "addroffset.hh"
+# include "lib/addroffset.hh"
 
 template <typename CPU>
 AddrOffset<CPU>::AddrOffset(typename cpu_traits<CPU>::AddrType addr1,

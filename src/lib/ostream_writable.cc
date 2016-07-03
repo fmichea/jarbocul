@@ -1,4 +1,4 @@
-#include "ostream_writable.hh"
+#include "lib/ostream_writable.hh"
 
 std::ostream& operator << (std::ostream& os, const OStreamWritable& osw) {
     osw._ostream_write(os);

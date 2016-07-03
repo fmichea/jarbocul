@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_GRAPH_BLOCK_HXX_
 # define JARBOCUL_GRAPH_BLOCK_HXX_
 
-# include "block.hh"
+# include "graph/block.hh"
 
 static boost::uuids::random_generator uuid_gen = boost::uuids::random_generator();
 

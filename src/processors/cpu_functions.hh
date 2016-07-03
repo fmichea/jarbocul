@@ -4,10 +4,10 @@
 
 # include <assert.h>
 
-# include "../graph/instruction.hh"
-# include "../graph/block.hh"
-# include "../lib/addroffset.hh"
-# include "cpu_traits.hh"
+# include "graph/block.hh"
+# include "graph/instruction.hh"
+# include "lib/addroffset.hh"
+# include "processors/cpu_traits.hh"
 
 template <typename CPU>
 struct cpu_functions {

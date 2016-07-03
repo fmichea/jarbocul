@@ -14,8 +14,8 @@
 # include <boost/uuid/uuid.hpp>
 # include <boost/uuid/uuid_generators.hpp>
 
-# include "../lib/ostream_writable.hh"
-# include "instruction.hh"
+# include "lib/ostream_writable.hh"
+# include "graph/instruction.hh"
 
 typedef enum {
     BLOCKTYPE_INT   = 0x01,
@@ -101,5 +101,6 @@ public:
     std::string name() const;
 };
 
-# include "block.hxx" 
+# include "graph/block.hxx"
+
 #endif /* !JARBOCUL_GRAPH_BLOCK_HH_ */

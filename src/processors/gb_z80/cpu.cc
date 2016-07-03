@@ -1,4 +1,4 @@
-#include "cpu.hh"
+#include "processors/gb_z80/cpu.hh"
 
 GB_Z80_Instruction::GB_Z80_Instruction()
     : Instruction<GB_Z80>()

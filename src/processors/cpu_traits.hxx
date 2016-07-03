@@ -1,8 +1,8 @@
 #pragma once
-#ifndef CPU_TRAITS_HXX_
-# define CPU_TRAITS_HXX_
+#ifndef JARBOCUL_PROCESSORS_CPU_TRAITS_HXX_
+# define JARBOCUL_PROCESSORS_CPU_TRAITS_HXX_
 
-# include "cpu_traits.hh"
+# include "processors/cpu_traits.hh"
 
 template <typename CPU>
 std::string addr2str(typename cpu_traits<CPU>::AddrType pc) {
@@ -15,4 +15,4 @@ std::string addr2str(typename cpu_traits<CPU>::AddrType pc) {
     return addr.str();
 }
 
-#endif /* !CPU_TRAITS_HXX_ */
+#endif /* !JARBOCUL_PROCESSORS_CPU_TRAITS_HXX_ */

@@ -2,22 +2,21 @@
 #ifndef JARBOCUL_GRAPH_GRAPH_HH_
 # define JARBOCUL_GRAPH_GRAPH_HH_
 
-# include <iostream>
 # include <fstream>
-
+# include <iostream>
 # include <list>
 # include <map>
 # include <queue>
 # include <set>
 # include <string>
 
-# include "../lib/file_reader.hh"
-# include "../lib/flowtype.hh"
-# include "../lib/set_sorter.hh"
-# include "../processors/cpu_functions.hh"
-# include "block.hh"
-# include "link.hh"
-# include "backtrace.hh"
+# include "graph/backtrace.hh"
+# include "graph/block.hh"
+# include "graph/link.hh"
+# include "lib/file_reader.hh"
+# include "lib/flowtype.hh"
+# include "lib/set_sorter.hh"
+# include "processors/cpu_functions.hh"
 
 template <typename CPU>
 class Graph {
@@ -56,6 +55,6 @@ private:
     std::list<BlockType*> _functions;
 };
 
-# include "graph.hxx"
+# include "graph/graph.hxx"
 
 #endif /* !JARBOCUL_GRAPH_GRAPH_HH_ */

@@ -2,7 +2,7 @@
 #ifndef JARBOCUL_WRITERS_ASCIIWRITER_HXX_
 # define JARBOCUL_WRITERS_ASCIIWRITER_HXX_
 
-# include "asciiwriter.hh"
+# include "writers/asciiwriter.hh"
 
 template <typename CPU>
 AsciiWriter<CPU>::AsciiWriter()
