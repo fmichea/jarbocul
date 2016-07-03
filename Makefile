@@ -1,7 +1,7 @@
 # Minor makefile to help build the tool.
 
 BUILD_TYPE ?= UNSET
-CMAKE_BASE_OPTIONS :=
+CMAKE_BASE_OPTIONS ?=
 
 # Build type is required
 ifeq ($(BUILD_TYPE),UNSET)
@@ -13,11 +13,15 @@ ifeq ($(BUILD_TYPE),release)
 CMAKE_BASE_OPTIONS := $(CMAKE_BASE_OPTIONS) -DCMAKE_BUILD_TYPE=Release
 else ifeq ($(BUILD_TYPE),debug)
 CMAKE_BASE_OPTIONS := $(CMAKE_BASE_OPTIONS) -DCMAKE_BUILD_TYPE=Debug
+else ifeq ($(BUILD_TYPE),test)
+BINARY_NAME := test-jarbocul
+CMAKE_BASE_OPTIONS := $(CMAKE_BASE_OPTIONS) -DCMAKE_BUILD_TYPE=Debug -DTESTING=1
 else
 $(error Build type "$(BUILD_TYPE)" not recognized)
 endif
 
 BUILD_DIR ?= build-$(BUILD_TYPE)
+BINARY_NAME ?= jarbocul
 
 # First check that we will not create a conflict with the following rules and
 # the name of the build directory. Let's just forbid that name, it's OK.
@@ -37,8 +41,8 @@ build-jarbocul: $(BUILD_DIR)
 	make -C $(BUILD_DIR)
 
 start: build-jarbocul
-	@echo "[+] Starting binary from $(PWD):"
-	time ./$(BUILD_DIR)/jarbocul $(BIN_ARGS)
+	@echo "[+] Running binary from $(PWD):"
+	@time ./$(BUILD_DIR)/$(BINARY_NAME) $(BINARY_ARGS)
 
 show-bin:
 	@make BUILD_TYPE=$(BUILD_TYPE) 1>&2
