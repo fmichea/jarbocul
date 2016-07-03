@@ -62,7 +62,11 @@ IF (TESTING EQUAL 1)
     INCLUDE_DIRECTORIES(${GTEST_INCLUDE_DIRS})
 
     # Testing source files.
-    SET(JARBOCUL_TESTS_SRCS tests/main.cc ${JARBOCUL_COMMON_SRCS})
+    SET(JARBOCUL_TESTS_SRCS
+        ${JARBOCUL_COMMON_SRCS}
+        tests/main.cc
+        tests/lib/addroffset.cc
+    )
 
     # Build the test binary.
     ADD_EXECUTABLE(test-jarbocul ${JARBOCUL_TESTS_SRCS} ${JARBOCUL_DEFINITIONS})
